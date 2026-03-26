@@ -1,0 +1,29 @@
+SUPERINTENDENCIA DE BANCA, SEGUROS Y AFP (SBS) - PERÚ
+Resolución SBS N° 1874-2019
+Norma para la Prevención del Lavado de Activos y del Financiamiento del Terrorismo
+
+Artículo 1. Alcance
+La presente norma es de aplicación obligatoria para todas las empresas del sistema financiero,
+de seguros y del sistema privado de pensiones supervisadas por la SBS.
+
+Artículo 8. Umbrales de operaciones inusuales
+Las empresas supervisadas deben dar especial atención a:
+a) Operaciones en efectivo por montos iguales o superiores a S/ 10,000 o su equivalente en moneda extranjera.
+b) Múltiples operaciones fraccionadas que en conjunto superen S/ 30,000 en un período de 30 días.
+c) Transferencias al exterior que no correspondan al perfil del cliente.
+
+Artículo 17. Personas Políticamente Expuestas
+Las empresas del sistema financiero deben aplicar medidas de debida diligencia reforzada (MDDR)
+a todos los clientes que tengan la condición de Persona Políticamente Expuesta (PEP) nacional o
+extranjera, así como a sus parientes hasta el segundo grado de consanguinidad y afinidad, y a sus
+asociados cercanos.
+
+Las MDDR implican:
+- Aprobación de la alta dirección para el inicio o continuación de la relación comercial.
+- Monitoreo continuo y reforzado de la relación comercial.
+- Escalamiento obligatorio a revisión humana de toda alerta generada, sin excepción.
+- Reporte obligatorio a la UIF-Perú cuando la operación supere los umbrales del Artículo 8.
+
+Artículo 23. Registros y conservación
+Los registros de operaciones sospechosas y los informes de inteligencia financiera deben conservarse
+por un mínimo de 10 años desde la fecha del reporte o de la última transacción, lo que sea mayor.
