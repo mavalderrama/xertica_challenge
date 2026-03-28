@@ -1,0 +1,56 @@
+SUPERINTENDENCIA DE BANCA, SEGUROS Y AFP (SBS) — UNIDAD DE INTELIGENCIA FINANCIERA DEL PERÚ (UIF-Perú)
+Resolución SBS N° 789-2018
+Norma para la Gestión del Riesgo de Lavado de Activos y del Financiamiento del Terrorismo (PLAFT)
+Aplicable a las empresas del sistema financiero supervisadas por la SBS.
+
+Artículo 1. Alcance
+La presente norma es de aplicación obligatoria para todas las empresas del sistema financiero,
+de seguros y del sistema privado de pensiones supervisadas por la SBS, en cumplimiento de la
+Ley N° 27693 y sus modificatorias.
+
+Artículo 5. Sistema de gestión de riesgo PLAFT
+Las empresas deben implementar un sistema integral de gestión del riesgo de lavado de activos
+que comprenda al menos: identificación, evaluación, control y monitoreo continuo del riesgo PLAFT.
+Los factores de riesgo mínimos a considerar son: cliente, producto/servicio, canal y geografía.
+El sistema debe producir indicadores de desempeño revisados con periodicidad al menos trimestral.
+
+Artículo 8. Registro de Operaciones y Umbrales
+Las empresas supervisadas registran y reportan a la UIF-Perú:
+a) Operaciones en efectivo por montos iguales o superiores a S/ 10,000 (diez mil soles) o
+   equivalente en moneda extranjera, realizadas en una sola operación.
+b) Múltiples operaciones fraccionadas del mismo cliente que superen S/ 30,000 (treinta mil
+   soles) en treinta (30) días calendario: indicio de estructuración o "pitufeo".
+c) Transferencias internacionales y operaciones que no correspondan al perfil del cliente.
+d) Operaciones en múltiples monedas que presenten patrones de estratificación o integración.
+Los Reportes de Operaciones Sospechosas (ROS) se envían a la UIF-Perú de manera inmediata
+una vez adoptada la decisión de reportar. No requieren certeza sobre la ilicitud; basta la sospecha.
+
+Artículo 10. Señales de alerta
+Las empresas deben parametrizar sus sistemas de monitoreo para detectar, entre otras:
+a) Transacciones en múltiples monedas extranjeras dentro de un período de 90 días sin sustento.
+b) Velocidad transaccional anormalmente alta respecto al perfil histórico del cliente.
+c) Operaciones con contrapartes en jurisdicciones de alto riesgo o no cooperantes.
+d) Clientes que presentan inconsistencia entre ingresos declarados y volumen transaccional.
+e) Cambios abruptos en el perfil del cliente (profesión, actividad económica, residencia).
+
+Artículo 17. Personas Políticamente Expuestas (PEP) — Debida Diligencia Reforzada (MDDR)
+Las empresas aplican Medidas de Debida Diligencia Reforzada (MDDR) a todos los clientes con
+condición de PEP nacional o extranjera, así como a sus parientes hasta el segundo grado de
+consanguinidad y de afinidad, y a sus colaboradores y socios cercanos. Las MDDR incluyen:
+a) Aprobación de la alta gerencia o directorio para inicio o continuación de la relación.
+b) Determinación del origen de los fondos y del patrimonio del cliente PEP.
+c) Monitoreo continuo, reforzado y documentado de toda la relación comercial.
+d) Escalamiento obligatorio a revisión humana de toda alerta generada por un cliente PEP,
+   sin excepción, independientemente del monto o tipo de transacción involucrada.
+e) Queda prohibido que sistemas automatizados emitan decisión de archivo sobre alertas PEP
+   sin revisión y aprobación expresa del oficial de cumplimiento.
+
+Artículo 23. Conservación de registros
+Los registros de operaciones, informes de inteligencia y documentación de decisiones adoptadas
+deben conservarse por un mínimo de diez (10) años desde la fecha del reporte o de la última
+transacción, lo que sea mayor, conforme a la Ley N° 27693 y sus modificatorias.
+
+Artículo 30. Oficial de cumplimiento
+Cada empresa supervisada designa un oficial de cumplimiento con dedicación exclusiva, que reporte
+directamente al directorio y cuente con autoridad para tomar decisiones de reporte de forma
+independiente a la línea de negocios.

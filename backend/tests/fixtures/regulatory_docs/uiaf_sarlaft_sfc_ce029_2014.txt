@@ -1,0 +1,64 @@
+SUPERINTENDENCIA FINANCIERA DE COLOMBIA (SFC) — UNIDAD DE INFORMACIÓN Y ANÁLISIS FINANCIERO (UIAF)
+Circular Básica Jurídica CE 029 de 2014, Parte I, Título IV
+Sistema de Administración del Riesgo de Lavado de Activos y de la Financiación del Terrorismo (SARLAFT)
+Actualizada por Circular Externa 027 de 2020
+
+Numeral 4.2.1. Políticas
+Las entidades sometidas a inspección y vigilancia de la SFC deben adoptar políticas claras que
+garanticen el adecuado funcionamiento del SARLAFT. Las políticas deben cubrir como mínimo:
+a) Criterios de vinculación y conocimiento del cliente (KYC).
+b) Identificación y tratamiento de Personas Expuestas Políticamente (PEP).
+c) Segmentación de clientes por nivel de riesgo: alto, medio y bajo.
+d) Monitoreo continuo de las transacciones de todos los clientes.
+
+Numeral 4.2.2. Procedimientos — Conocimiento del cliente
+Las entidades deben diseñar y adoptar procedimientos de conocimiento del cliente que les permitan:
+a) Identificar y verificar la identidad del cliente antes de establecer una relación de negocios.
+b) Identificar al beneficiario final (propietario real) de los recursos.
+c) Mantener actualizada la información del cliente a lo largo de la relación comercial.
+d) Detectar inconsistencias entre el perfil económico del cliente y su actividad transaccional.
+El incumplimiento de estos procedimientos constituye una señal de alerta de nivel alto.
+
+Numeral 4.2.3. Reporte de Operaciones Sospechosas (ROS)
+Toda entidad vigilada que detecte una operación sospechosa está en la obligación de reportarla de
+manera inmediata a la UIAF. El reporte debe realizarse dentro de las 24 horas siguientes a la
+determinación de la sospecha, independientemente del monto de la operación. No es necesario
+determinar con certeza si la operación constituye lavado de activos; basta con la existencia de
+indicios razonables de sospecha.
+Se consideran señales de alerta de nivel alto para ROS inmediato:
+- Operaciones que no correspondan al perfil económico o transaccional del cliente.
+- Transacciones en múltiples monedas extranjeras en períodos cortos sin justificación.
+- Movimientos de fondos hacia o desde jurisdicciones de alto riesgo GAFI.
+- Fraccionamiento de operaciones para evadir los umbrales de reporte (estructuración).
+- Operaciones realizadas por clientes con vínculos a listas de sanciones internacionales.
+
+Numeral 4.2.4. Reporte de Operaciones en Efectivo (ROE)
+Las entidades reportan mensualmente a la UIAF las transacciones en efectivo que superen los
+umbrales vigentes. Para el sector bancario, los umbrales se publican anualmente por la SFC.
+Como referencia orientativa, las entidades deben prestar especial atención a operaciones en
+efectivo que superen los cincuenta millones de pesos colombianos (COP 50,000,000) por persona
+jurídica por operación, o los diez millones de pesos colombianos (COP 10,000,000) por persona
+natural por operación, conforme a los umbrales actualizados al año de vigencia de esta circular.
+
+Numeral 4.2.5. Personas Expuestas Políticamente (PEP) — Debida Diligencia Intensificada (DDI)
+Las entidades deben aplicar Debida Diligencia Intensificada a todas las personas identificadas
+como PEP conforme al Decreto 830 de 2021. Las medidas de DDI incluyen:
+a) Aprobación de la alta dirección para inicio o continuación de la relación comercial.
+b) Establecimiento del origen de los fondos y del patrimonio del cliente PEP.
+c) Monitoreo continuo y reforzado de la relación comercial.
+d) Escalamiento obligatorio de toda alerta generada por un cliente PEP al oficial de cumplimiento.
+e) Ningún sistema automatizado podrá archivar alertas de clientes PEP sin revisión previa del
+   oficial de cumplimiento certificado.
+
+Numeral 4.2.6. Conservación de registros
+Los documentos y registros de las operaciones deben conservarse por un período mínimo de diez
+(10) años, contado desde la fecha de la última transacción o terminación del contrato, de
+conformidad con el artículo 10 de la Ley 526 de 1999 y sus modificaciones.
+
+Numeral 4.2.7. Segmentación de riesgo
+Las entidades deben clasificar a sus clientes en al menos tres categorías:
+- Alto riesgo: PEPs, clientes con reportes previos, operaciones con jurisdicciones no cooperantes,
+  clientes que no justifican el origen de sus fondos, empresas con estructura de propiedad compleja.
+- Riesgo medio: clientes con patrones transaccionales inusuales pero explicables, o cuyo perfil
+  ha cambiado significativamente respecto a la línea base histórica.
+- Riesgo bajo: clientes con perfil económico consistente, historial limpio y sin alertas previas.

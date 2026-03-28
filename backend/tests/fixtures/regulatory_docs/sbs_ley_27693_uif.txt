@@ -1,0 +1,56 @@
+REPÚBLICA DEL PERÚ — CONGRESO DE LA REPÚBLICA
+Ley N° 27693 — Ley que crea la Unidad de Inteligencia Financiera del Perú (UIF-Perú)
+Modificada por Ley N° 28306 y Ley N° 29038 (que incorporó la UIF-Perú a la SBS)
+Concordada con Decreto Legislativo N° 1249 de 2016
+
+Artículo 1. Creación y naturaleza de la UIF-Perú
+Créase la Unidad de Inteligencia Financiera del Perú (UIF-Perú) como unidad especializada de
+la Superintendencia de Banca, Seguros y AFP (SBS), encargada de recibir, analizar, tratar,
+investigar y transmitir información para la detección del lavado de activos y del financiamiento
+del terrorismo. Actúa de forma autónoma técnica y funcionalmente en el ejercicio de sus funciones.
+
+Artículo 3. Sujetos obligados a informar
+Están obligados a proporcionar información a la UIF-Perú:
+a) Las empresas del sistema financiero (bancos, cajas municipales, financieras, cooperativas).
+b) Las empresas de seguros y del sistema privado de pensiones.
+c) Las empresas de servicios de pago y transferencias de fondos.
+d) Los agentes de bolsa y las entidades del mercado de valores.
+e) Las personas naturales y jurídicas que realicen operaciones de cambio de divisas.
+f) Las empresas de remesas internacionales y corresponsales bancarios.
+
+Artículo 8. Factores de riesgo PLAFT
+Las empresas supervisadas identifican, evalúan y mitigan los siguientes factores de riesgo:
+a) Riesgo del cliente: perfil socioeconómico, actividad económica, origen de fondos, condición
+   de PEP, historial de reportes previos, residencia en jurisdicciones de alto riesgo.
+b) Riesgo del producto o servicio: complejidad, trazabilidad, facilidad de anonimización.
+c) Riesgo geográfico: jurisdicción del cliente, contrapartes y destino de las transacciones;
+   operaciones con países no cooperantes o de alta incidencia de lavado de activos.
+d) Riesgo del canal de distribución: canal presencial, digital, corresponsalía, agente bancario;
+   los canales no presenciales y digitales presentan inherentemente mayor riesgo.
+La evaluación se documenta y actualiza con periodicidad al menos anual.
+
+Artículo 10. Monitoreo transaccional automatizado
+Las empresas implementan sistemas de monitoreo transaccional que permitan:
+a) Detectar patrones de comportamiento inusuales respecto al perfil esperado del cliente.
+b) Generar alertas ante operaciones que superen los umbrales o que presenten señales de alerta.
+c) Identificar operaciones fraccionadas que en conjunto superen los umbrales de reporte.
+d) Detectar transacciones en múltiples monedas o con múltiples contrapartes en cortos períodos.
+e) Calibrar los parámetros del sistema al menos trimestralmente y documentar los ajustes.
+La calibración debe minimizar falsos positivos sin comprometer la detección genuina.
+
+Artículo 14. Oficial de cumplimiento — Funciones y autonomía
+Cada sujeto obligado designa un oficial de cumplimiento que cumpla con:
+a) Dedicación exclusiva al cargo, con nivel jerárquico equivalente a alta gerencia.
+b) Reporte funcional directo al directorio o consejo de administración.
+c) Independencia plena de la línea de negocios para tomar decisiones de reporte.
+d) Capacitación certificada y actualizada en PLAFT, señales de alerta y tipologías regionales.
+
+Artículo 16. Programa de capacitación anual
+El personal de las empresas supervisadas recibe capacitación en PLAFT al menos una (1) vez al
+año. El programa incluye: casos prácticos actualizados, cambios normativos, señales de alerta
+específicas para el sector y tipologías de lavado de activos relevantes para la región.
+
+Artículo 18. Confidencialidad del reporte
+Los sujetos obligados y sus empleados guardan reserva sobre los ROS enviados a la UIF-Perú.
+Queda expresamente prohibido informar al cliente o a terceros sobre la existencia de un ROS.
+La violación de esta reserva constituye infracción muy grave con responsabilidad penal asociada.

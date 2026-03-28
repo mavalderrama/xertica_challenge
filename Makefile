@@ -1,37 +1,39 @@
-.PHONY: install dev-install migrate makemigrations run test test-unit test-integration lint format typecheck docker-up docker-down index-regulations clean
+.PHONY: install dev-install migrate makemigrations run test test-unit test-integration lint format typecheck docker-up docker-down seed seed-clear index-regulations live-test clean
+
+BACKEND := backend
 
 install:
-	uv sync --frozen
+	cd $(BACKEND) && uv sync --frozen
 
 dev-install:
-	uv sync --frozen --group dev
+	cd $(BACKEND) && uv sync --frozen --group dev
 
 migrate:
-	uv run python -m django migrate --settings=config.settings.local
+	cd $(BACKEND) && uv run python manage.py migrate --settings=config.settings.local
 
 makemigrations:
-	uv run python -m django makemigrations --settings=config.settings.local
+	cd $(BACKEND) && uv run python manage.py makemigrations --settings=config.settings.local
 
 run:
-	uv run uvicorn compliance_agent.api.main:app --reload --host 0.0.0.0 --port 8000
+	cd $(BACKEND) && uv run uvicorn compliance_agent.api.main:app --reload --host 0.0.0.0 --port 8000
 
 test:
-	uv run pytest tests/ -x --cov=compliance_agent --cov-fail-under=60
+	cd $(BACKEND) && uv run pytest tests/ -x --cov=compliance_agent --cov-fail-under=60
 
 test-unit:
-	uv run pytest tests/unit/ -x
+	cd $(BACKEND) && uv run pytest tests/unit/ -x
 
 test-integration:
-	uv run pytest tests/integration/ -x -m integration
+	cd $(BACKEND) && uv run pytest tests/integration/ -x -m integration
 
 lint:
-	uv run ruff check .
+	cd $(BACKEND) && uv run ruff check .
 
 format:
-	uv run ruff format .
+	cd $(BACKEND) && uv run ruff format .
 
 typecheck:
-	uv run mypy compliance_agent/ --ignore-missing-imports
+	cd $(BACKEND) && uv run mypy compliance_agent/ --ignore-missing-imports
 
 docker-up:
 	docker compose up -d
@@ -39,10 +41,19 @@ docker-up:
 docker-down:
 	docker compose down
 
+seed:
+	cd $(BACKEND) && uv run python manage.py seed_data --settings=config.settings.local
+
+seed-clear:
+	cd $(BACKEND) && uv run python manage.py seed_data --clear --settings=config.settings.local
+
 index-regulations:
-	uv run python -m compliance_agent.rag.indexer
+	cd $(BACKEND) && uv run python manage.py index_regulations --settings=config.settings.local
+
+live-test:
+	bash scripts/live_test.sh $(SCENARIO)
 
 clean:
 	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null; \
 	find . -type f -name "*.pyc" -delete; \
-	rm -rf .coverage htmlcov .pytest_cache .mypy_cache
+	cd $(BACKEND) && rm -rf .coverage htmlcov .pytest_cache .mypy_cache

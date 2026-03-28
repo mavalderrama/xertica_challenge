@@ -1,0 +1,58 @@
+COMISIÓN NACIONAL BANCARIA Y DE VALORES (CNBV) — SECRETARÍA DE HACIENDA Y CRÉDITO PÚBLICO (SHCP)
+Disposiciones de Carácter General (DCG) a que se refiere el Artículo 115 de la
+Ley de Instituciones de Crédito (LIC)
+Publicadas en el Diario Oficial de la Federación con modificaciones vigentes.
+
+Disposición 2a. Definiciones
+Para efectos de las presentes Disposiciones se entenderá por:
+- Operación Relevante: toda transacción en efectivo, metales amonedados o cheques de viajero
+  por montos iguales o superiores al equivalente en moneda nacional a 7,500 dólares de los
+  Estados Unidos de América (USD 7,500), calculados al tipo de cambio del día de operación.
+- Operación Inusual: transacción que no tiene una causa lícita aparente o no corresponde con
+  los antecedentes o actividad conocida del cliente, independientemente del monto.
+- Operación Interna Preocupante (ROIP): comportamiento de personal de la institución que pudiera
+  ser relevante para detectar conductas ilícitas.
+- Persona Políticamente Expuesta (PPE): individuo que desempeña o ha desempeñado funciones
+  públicas prominentes en México o en el extranjero, incluyendo familiares y socios cercanos.
+
+Disposición 12a. Conoce a tu Cliente (KYC)
+Las instituciones deben obtener, verificar y actualizar la información para:
+a) Identificar plenamente al cliente y al beneficiario real de los recursos.
+b) Entender la naturaleza y propósito de la relación de negocios.
+c) Establecer el perfil transaccional esperado del cliente.
+d) Detectar desviaciones respecto del perfil transaccional y generar alertas de forma oportuna.
+e) Para clientes de alto riesgo (incluyendo PPEs), actualizar la información con frecuencia
+   semestral como mínimo.
+
+Disposición 28a. Operaciones Relevantes — Reporte trimestral
+Las instituciones reportarán trimestralmente a la SHCP, a través de la CNBV, las Operaciones
+Relevantes. El Reporte de Operación Relevante (ROR) incluirá datos de identificación del cliente,
+monto, moneda, tipo de instrumento (efectivo, metal, cheque de viajero) y fecha. La omisión de
+reporte de operaciones relevantes constituye infracción grave.
+
+Disposición 29a. Operaciones Inusuales — Dictamen y plazo de reporte
+Toda alerta de operación inusual se somete a dictamen que no podrá exceder sesenta (60) días
+naturales contados desde que se generó la alerta. Una vez emitido el dictamen, si la institución
+determina que la operación es inusual, deberá presentar el Reporte de Operación Inusual (ROI)
+a la SHCP/UIF dentro de los tres (3) días hábiles siguientes. Para transferencias internacionales
+hacia jurisdicciones de alto riesgo, el plazo de dictamen es de quince (15) días naturales.
+
+Disposición 30a. Señales de alerta específicas
+Se consideran señales de alerta que detonan obligación de análisis:
+a) Transacciones en múltiples monedas extranjeras o divisas sin justificación comercial.
+b) Transferencias recurrentes a cuentas en distintas instituciones sin causa lícita aparente.
+c) Operaciones fraccionadas (por debajo de USD 7,500) cuando en conjunto superen el umbral.
+d) Clientes con actividad transaccional inconsistente con su perfil o actividad declarada.
+e) Operaciones con jurisdicciones identificadas por el GAFI como de alto riesgo.
+
+Disposición 31a. Personas Políticamente Expuestas (PPE)
+Las instituciones establecerán procedimientos especiales para PPEs. Toda operación de PPE debe:
+1. Identificarse y registrarse con nivel de detalle ampliado, incluyendo origen de recursos.
+2. Evaluarse por el área de cumplimiento con la participación del oficial de cumplimiento.
+3. Escalarse a revisión humana antes de cualquier determinación de archivo.
+4. Está prohibido que sistemas automatizados archiven operaciones de PPEs sin revisión
+   previa y expresa del oficial de cumplimiento.
+
+Disposición 38a. Conservación de registros
+Las instituciones conservarán documentación e información de clientes y operaciones durante un
+mínimo de diez (10) años, contado desde la fecha de la operación o terminación de la relación.

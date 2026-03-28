@@ -1,0 +1,52 @@
+REPÚBLICA DE COLOMBIA — PRESIDENCIA DE LA REPÚBLICA
+Decreto 830 de 2021
+Por el cual se amplía la definición de Personas Expuestas Políticamente (PEP) y se dictan
+otras disposiciones en materia de prevención del lavado de activos y financiación del terrorismo.
+
+Artículo 1. Definición ampliada de Persona Expuesta Políticamente (PEP)
+Para efectos del SARLAFT, se entenderá por PEP todo individuo que desempeña o ha desempeñado
+funciones públicas destacadas en Colombia o en el exterior, incluyendo:
+a) Jefes de Estado o de gobierno, ministros, viceministros y secretarios de Estado.
+b) Congresistas, parlamentarios y legisladores.
+c) Magistrados, jueces y fiscales de alto rango del poder judicial.
+d) Embajadores, cónsules y representantes diplomáticos.
+e) Altos oficiales de fuerzas militares y de policía.
+f) Directores y gerentes de empresas estatales y organismos internacionales.
+g) Todo servidor público que administre, gestione o controle recursos públicos,
+   independientemente de su nivel jerárquico. (Ampliación introducida por Decreto 830/2021)
+h) Miembros de órganos de gobierno de partidos y movimientos políticos.
+
+Artículo 3. Extensión de las obligaciones PEP a personas vinculadas
+Las obligaciones de Debida Diligencia Intensificada (DDI) se extienden a:
+a) Familiares hasta el segundo grado de consanguinidad y primero de afinidad del PEP.
+b) Asociados cercanos: personas jurídicas o naturales con quienes el PEP mantenga relaciones
+   comerciales estrechas o de quienes sea beneficiario real o final.
+c) Personas conocidas públicamente como socios de negocios del PEP.
+Las entidades deberán actualizar semestralmente sus listas de clientes con condición PEP.
+
+Artículo 5. Obligaciones de las entidades vigiladas frente a PEPs
+Las entidades sometidas a vigilancia de la Superintendencia Financiera deberán:
+a) Identificar a todos sus clientes que tengan o hayan tenido la condición de PEP en los
+   últimos dos (2) años, incluyendo quienes dejaron el cargo recientemente.
+b) Aplicar medidas de DDI desde el inicio de la relación comercial y durante toda su vigencia.
+c) Obtener aprobación expresa de la alta dirección antes de establecer o continuar una
+   relación de negocios con un PEP o persona vinculada.
+d) Reportar de manera inmediata a la UIAF toda operación que genere sospecha en relación
+   con un PEP, sin distinción de monto ni tipo de transacción.
+e) Mantener un expediente documental completo y actualizado de cada cliente PEP.
+
+Artículo 6. Prohibición de archivo automatizado para PEPs
+Queda expresamente prohibido que los sistemas de monitoreo automatizado o de inteligencia
+artificial emitan decisiones de archivo o cierre sobre alertas asociadas a Personas Expuestas
+Políticamente (PEP) o a sus personas vinculadas, sin que medie revisión previa, análisis
+documentado y aprobación expresa del oficial de cumplimiento designado.
+La decisión de escalamiento para PEPs es obligatoria e irrenunciable.
+
+Artículo 8. Régimen sancionatorio
+El incumplimiento de las disposiciones del presente decreto dará lugar a las sanciones previstas
+en el Estatuto Orgánico del Sistema Financiero y en las circulares de la Superintendencia
+Financiera, sin perjuicio de las responsabilidades penales que puedan derivarse.
+
+Artículo 9. Vigencia
+El presente decreto rige desde su publicación en el Diario Oficial y deroga las definiciones
+restrictivas de PEP contenidas en el Decreto 1674 de 2016 en lo que resulten incompatibles.

@@ -8,7 +8,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - pgdata:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U compliance -d compliance_db"]
       interval: 10s
@@ -18,32 +18,18 @@ services:
   langfuse:
     image: langfuse/langfuse:2
     environment:
-      DATABASE_URL: postgresql://langfuse:langfuse@langfuse_db:5432/langfuse
+      DATABASE_URL: postgresql://compliance:compliance@db:5432/compliance_db
       NEXTAUTH_SECRET: supersecret-change-in-production
       NEXTAUTH_URL: http://localhost:3000
       SALT: supersalt
     ports:
       - "3000:3000"
     depends_on:
-      langfuse_db:
+      db:
         condition: service_healthy
 
-  langfuse_db:
-    image: postgres:16
-    environment:
-      POSTGRES_DB: langfuse
-      POSTGRES_USER: langfuse
-      POSTGRES_PASSWORD: langfuse
-    volumes:
-      - langfuse_pgdata:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U langfuse"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
   api:
-    build: .
+    build: ./backend
     environment:
       DJANGO_SETTINGS_MODULE: config.settings.local
       POSTGRES_HOST: db
@@ -59,9 +45,8 @@ services:
       db:
         condition: service_healthy
     volumes:
-      - ./compliance_agent:/app/compliance_agent
-      - ./config:/app/config
+      - ./backend/compliance_agent:/app/compliance_agent
+      - ./backend/config:/app/config
 
 volumes:
   pgdata:
-  langfuse_pgdata:
