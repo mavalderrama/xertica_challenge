@@ -9,28 +9,36 @@
 #   4. make index-regulations      (regulatory docs indexed for RAG)
 #
 # Usage:
-#   bash scripts/live_test.sh [SCENARIO] [BASE_URL]
+#   bash scripts/live_test.sh [SCENARIO] [BASE_URL] [--judge|--no-judge]
 #
 # Arguments:
-#   SCENARIO   One of: low-risk | high-risk | pep-small | pep-large |
-#                      mid-risk | multi-ccy | corp | safe | all
-#              Default: all
-#   BASE_URL   API base URL. Default: http://localhost:8000
+#   SCENARIO     One of: low-risk | high-risk | pep-small | pep-large |
+#                        mid-risk | multi-ccy | corp | safe | all  (default: all)
+#   BASE_URL     API base URL. Default: http://localhost:8000
+#   --judge      Force-run the LLM judge after scenarios complete
+#   --no-judge   Skip the LLM judge (useful when running a single scenario)
 #
-# Examples:
-#   bash scripts/live_test.sh                    # runs all scenarios
-#   bash scripts/live_test.sh pep-small          # tests PEP hard-rule
-#   bash scripts/live_test.sh high-risk          # tests escalation path
-#   bash scripts/live_test.sh all http://localhost:8001
+# LLM judge runs automatically when SCENARIO=all (override with --no-judge).
 # =============================================================================
 
 set -euo pipefail
 
+# ── Argument parsing ───────────────────────────────────────────────────────────
 SCENARIO="${1:-all}"
 BASE_URL="${2:-http://localhost:8000}"
-API="${BASE_URL}/api/v1/alerts"
+RUN_JUDGE="auto"   # auto | true | false
+for _arg in "${@:3}"; do
+    case "$_arg" in
+        --judge)    RUN_JUDGE="true"  ;;
+        --no-judge) RUN_JUDGE="false" ;;
+    esac
+done
 
-# ── Colours ──────────────────────────────────────────────────────────────────
+API="${BASE_URL}/api/v1/alerts"
+SCRIPTS_DIR="$(cd "$(dirname "$0")" && pwd)"
+BACKEND_DIR="$(cd "${SCRIPTS_DIR}/../backend" && pwd)"
+
+# ── Colours ────────────────────────────────────────────────────────────────────
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -39,27 +47,59 @@ CYAN='\033[0;36m'
 BOLD='\033[1m'
 NC='\033[0m'
 
-# ── Helpers ───────────────────────────────────────────────────────────────────
-header() { echo -e "\n${BOLD}${BLUE}═══════════════════════════════════════════${NC}"; echo -e "${BOLD}${BLUE}  $1${NC}"; echo -e "${BOLD}${BLUE}═══════════════════════════════════════════${NC}"; }
-step()   { echo -e "\n${CYAN}── $1${NC}"; }
-ok()     { echo -e "${GREEN}✓ $1${NC}"; }
-warn()   { echo -e "${YELLOW}⚠ $1${NC}"; }
-fail()   { echo -e "${RED}✗ $1${NC}"; }
-info()   { echo -e "  $1"; }
+# ── Result accumulators ────────────────────────────────────────────────────────
+RESULTS_FILE=$(mktemp /tmp/compliance_live_XXXXXX.json)
+echo '[]' > "$RESULTS_FILE"
+SCENARIO_COUNT=0
+PASS_COUNT=0
+FAIL_COUNT=0
 
-# Resolve an external_alert_id to its DB UUID by querying the API health
-# The seed_data command prints UUIDs — we look them up via the status endpoint
-# by scanning through the seeded external IDs against known UUIDs.
-# In practice, run `make seed` first and copy the UUIDs it prints.
-#
-# For this script we look up IDs from the database via Django shell.
+cleanup() { rm -f "$RESULTS_FILE"; }
+trap cleanup EXIT
+
+# ── Helpers ────────────────────────────────────────────────────────────────────
+step() { echo -e "\n${CYAN}── $1${NC}"; }
+ok()   { echo -e "${GREEN}✓ $1${NC}"; }
+warn() { echo -e "${YELLOW}⚠ $1${NC}"; }
+fail() { echo -e "${RED}✗ $1${NC}"; }
+
+# Resolve an external_alert_id to its DB UUID
 resolve_uuid() {
     local ext_id="$1"
-    cd "$(dirname "$0")/../backend" 2>/dev/null || true
+    cd "$BACKEND_DIR"
     uv run python manage.py shell \
         --settings=config.settings.local \
-        -c "from compliance_agent.models import Alert; a=Alert.objects.filter(external_alert_id='${ext_id}').first(); print(a.id if a else 'NOT_FOUND')" \
+        -c "from compliance_agent.models import Alert; \
+a=Alert.objects.filter(external_alert_id='${ext_id}').first(); \
+print(a.id if a else 'NOT_FOUND')" \
         2>/dev/null | tail -1
+}
+
+# Fetch investigation structured_context + alert fields from the DB
+fetch_investigation_context() {
+    local uuid="$1"
+    cd "$BACKEND_DIR"
+    uv run python manage.py shell \
+        --settings=config.settings.local \
+        -c "
+import json
+from compliance_agent.models import Alert
+a = Alert.objects.select_related('investigation').filter(id='${uuid}').first()
+if a:
+    ctx = {}
+    try:
+        ctx = dict(a.investigation.structured_context)
+    except Exception:
+        pass
+    ctx['current_alert_amount']   = float(a.amount)
+    ctx['current_alert_currency'] = a.currency
+    ctx['is_pep']                 = a.is_pep
+    ctx['xgboost_score']          = a.xgboost_score
+    ctx['segment']                = (a.raw_payload or {}).get('segment', '')
+    print(json.dumps(ctx))
+else:
+    print('{}')
+" 2>/dev/null | tail -1
 }
 
 check_api_health() {
@@ -78,181 +118,116 @@ check_api_health() {
     local ready
     ready=$(curl -s --max-time 5 "${BASE_URL}/readiness" 2>/dev/null || echo "")
     if echo "$ready" | grep -q '"ready"'; then
-        ok "DB connected: $ready"
+        ok "DB connected"
     else
         warn "Readiness check failed: $ready"
     fi
 }
 
+# ── Core investigation runner ──────────────────────────────────────────────────
 run_investigation() {
     local label="$1"
     local ext_id="$2"
     local expected_decision="$3"
-    local description="$4"
+    # $4 = description (unused now — shown in the visual diagram)
+    local scenario_num="$5"
 
-    header "SCENARIO: ${label}"
-    info "External ID : ${ext_id}"
-    info "Expected    : ${expected_decision}"
-    info "Description : ${description}"
+    SCENARIO_COUNT=$((SCENARIO_COUNT + 1))
 
-    step "Resolving UUID from external_alert_id"
+    # ── Resolve UUID ────────────────────────────────────────────────────────
     local uuid
     uuid=$(resolve_uuid "$ext_id")
-
     if [[ "$uuid" == "NOT_FOUND" || -z "$uuid" ]]; then
-        fail "Alert '${ext_id}' not found in database. Run: make seed"
+        fail "Alert '${ext_id}' not found. Run: make seed"
         return 1
     fi
-    info "UUID: ${uuid}"
 
-    step "GET /api/v1/alerts/${uuid}/status (before investigation)"
-    local status_before
-    status_before=$(curl -s --max-time 10 "${API}/${uuid}/status")
-    echo "$status_before" | python3 -m json.tool 2>/dev/null || echo "$status_before"
+    # ── Pre-investigation status ─────────────────────────────────────────────
     local current_status
-    current_status=$(echo "$status_before" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('status','?'))" 2>/dev/null || echo "?")
-    info "Current status: ${current_status}"
-
+    current_status=$(curl -s --max-time 10 "${API}/${uuid}/status" \
+        | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('status','?'))" \
+        2>/dev/null || echo "?")
     if [[ "$current_status" != "PENDING" ]]; then
-        warn "Alert is not PENDING (status=${current_status}). It may have been investigated already."
-        warn "Run 'make seed --clear' to reset, then 'make seed' again."
+        warn "Alert ${ext_id} is already '${current_status}'. Run: make seed-clear && make seed"
     fi
 
-    step "POST /api/v1/alerts/${uuid}/investigate  (running 3-agent pipeline...)"
-    echo "  This may take 5-30 seconds depending on LLM response time."
-    local start_time
-    start_time=$(date +%s)
+    # ── Run pipeline (POST /investigate) ────────────────────────────────────
+    local start_time elapsed response
+    start_time=$(python3 -c "import time; print(time.time())")
 
-    local response
-    response=$(curl -s --max-time 120 -X POST \
-        -H "Content-Type: application/json" \
-        -d '{}' \
+    response=$(curl -s --max-time 120 \
+        -X POST -H "Content-Type: application/json" -d '{}' \
         "${API}/${uuid}/investigate")
 
-    local elapsed=$(( $(date +%s) - start_time ))
+    elapsed=$(python3 -c "import time; print(round(time.time() - ${start_time}, 2))")
 
-    if echo "$response" | python3 -c "import sys,json; json.load(sys.stdin)" 2>/dev/null; then
-        echo ""
-        echo "$response" | python3 -m json.tool
-    else
-        fail "Invalid JSON response:"
+    if ! echo "$response" | python3 -c "import sys,json; json.load(sys.stdin)" 2>/dev/null; then
+        fail "Invalid JSON from /investigate for ${ext_id}:"
         echo "$response"
         return 1
     fi
 
-    local decision_type
-    decision_type=$(echo "$response" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('status','?'))" 2>/dev/null || echo "?")
-
-    local risk_score
-    risk_score=$(echo "$response" | python3 -c "import sys,json; d=json.load(sys.stdin); ra=d.get('risk_analysis') or {}; print(ra.get('risk_score','?'))" 2>/dev/null || echo "?")
-
-    local confidence
-    confidence=$(echo "$response" | python3 -c "import sys,json; d=json.load(sys.stdin); dec=d.get('decision') or {}; print(dec.get('confidence','?'))" 2>/dev/null || echo "?")
-
-    local pep_override
-    pep_override=$(echo "$response" | python3 -c "import sys,json; d=json.load(sys.stdin); dec=d.get('decision') or {}; print(dec.get('is_pep_override_applied',False))" 2>/dev/null || echo "?")
-
-    echo ""
-    echo -e "${BOLD}── Summary ──────────────────────────────────${NC}"
-    info "Decision    : ${decision_type}"
-    info "Risk score  : ${risk_score}/10"
-    info "Confidence  : ${confidence}"
-    info "PEP override: ${pep_override}"
-    info "Elapsed     : ${elapsed}s"
-
-    if [[ "$decision_type" == "$expected_decision" ]]; then
-        ok "Decision matches expected: ${expected_decision}"
-    else
-        warn "Decision '${decision_type}' differs from expected '${expected_decision}'"
-        warn "(LLM decisions are non-deterministic — this may be acceptable)"
-    fi
-
-    step "GET /api/v1/alerts/${uuid}/status (after investigation)"
-    curl -s --max-time 10 "${API}/${uuid}/status" | python3 -m json.tool
-
-    step "GET /api/v1/alerts/${uuid}/audit-trail"
+    # ── Audit trail ──────────────────────────────────────────────────────────
     local audit
     audit=$(curl -s --max-time 10 "${API}/${uuid}/audit-trail")
-    echo "$audit" | python3 -m json.tool
+    if ! echo "$audit" | python3 -c "import sys,json; json.load(sys.stdin)" 2>/dev/null; then
+        warn "Invalid JSON from /audit-trail for ${ext_id} — using empty audit. Raw: ${audit}"
+        audit='{"alert_id":"'${uuid}'","events":[]}'
+    fi
 
-    local total_cost
-    total_cost=$(echo "$audit" | python3 -c "
-import sys, json
-d = json.load(sys.stdin)
-events = d.get('events', [])
-total = sum(float(e.get('token_cost_usd', 0)) for e in events)
-total_ms = sum(int(e.get('duration_ms', 0)) for e in events)
-print(f'Total LLM cost: \${total:.6f} | Total agent time: {total_ms}ms')
-" 2>/dev/null || echo "")
-    info "$total_cost"
+    # ── Investigation context from DB ────────────────────────────────────────
+    local context
+    context=$(fetch_investigation_context "$uuid")
+    [[ -z "$context" ]] && context="{}"
+
+    # ── Render visual workflow + accumulate result ───────────────────────────
+    local match_exit=0
+    python3 "${SCRIPTS_DIR}/live_test_render.py" \
+        --response     "$response" \
+        --audit        "$audit" \
+        --context      "$context" \
+        --ext-id       "$ext_id" \
+        --expected     "$expected_decision" \
+        --elapsed      "$elapsed" \
+        --scenario-num "$scenario_num" \
+        --label        "$label" \
+        --results-file "$RESULTS_FILE" \
+        || match_exit=$?
+
+    if [[ $match_exit -eq 0 ]]; then
+        PASS_COUNT=$((PASS_COUNT + 1))
+    else
+        FAIL_COUNT=$((FAIL_COUNT + 1))
+    fi
 }
 
 # ── Scenario definitions ───────────────────────────────────────────────────────
-scenario_low_risk() {
-    run_investigation \
-        "1. Low-Risk Dismissal" \
-        "LIVE-LOW-RISK-001" \
-        "DISMISS" \
-        "COP 3.5M, xgb=0.31, retail customer. Should be dismissed — below threshold, clean profile."
+scenario_low_risk()  {
+    run_investigation "Low-Risk Dismissal"        "LIVE-LOW-RISK-001"  "DISMISS"       "" 1
 }
-
 scenario_high_risk() {
-    run_investigation \
-        "2. High-Risk Escalation" \
-        "LIVE-HIGH-RISK-002" \
-        "ESCALATE" \
-        "USD 85,000, xgb=0.89, SME. Single large transfer. Should trigger ESCALATE."
+    run_investigation "High-Risk Escalation"      "LIVE-HIGH-RISK-002" "ESCALATE"      "" 2
 }
-
 scenario_pep_small() {
-    run_investigation \
-        "3. PEP — Small Amount (hard-rule)" \
-        "LIVE-PEP-SMALL-003" \
-        "ESCALATE" \
-        "MXN 12,000, xgb=0.45, is_pep=True. PEP hard-rule: no LLM call, instant ESCALATE."
+    run_investigation "PEP — Small Amount"        "LIVE-PEP-SMALL-003" "ESCALATE"      "" 3
 }
-
 scenario_pep_large() {
-    run_investigation \
-        "4. PEP — Large Amount (hard-rule)" \
-        "LIVE-PEP-LARGE-004" \
-        "ESCALATE" \
-        "USD 750,000, xgb=0.92, is_pep=True, foreign official. PEP hard-rule applies."
+    run_investigation "PEP — Large Amount"        "LIVE-PEP-LARGE-004" "ESCALATE"      "" 4
 }
-
-scenario_mid_risk() {
-    run_investigation \
-        "5. Mid-Risk — Request Info" \
-        "LIVE-MID-RISK-005" \
-        "REQUEST_INFO" \
-        "PEN 18,500, xgb=0.61, changed profession. Ambiguous — expect REQUEST_INFO."
+scenario_mid_risk()  {
+    run_investigation "Mid-Risk Request Info"     "LIVE-MID-RISK-005"  "REQUEST_INFO"  "" 5
 }
-
 scenario_multi_ccy() {
-    run_investigation \
-        "6. Multi-Currency Suspicious Activity" \
-        "LIVE-MULTI-CCY-006" \
-        "ESCALATE" \
-        "USD 45,000, xgb=0.77, 4 currencies in 90 days. Layering indicators."
+    run_investigation "Multi-Currency Activity"   "LIVE-MULTI-CCY-006" "ESCALATE"      "" 6
+}
+scenario_corp()      {
+    run_investigation "Corporate High COP Amount" "LIVE-CORP-007"      "ESCALATE"      "" 7
+}
+scenario_safe()      {
+    run_investigation "Safe Retail Customer"      "LIVE-SAFE-008"      "DISMISS"       "" 8
 }
 
-scenario_corp() {
-    run_investigation \
-        "7. Corporate — High COP Amount" \
-        "LIVE-CORP-007" \
-        "ESCALATE" \
-        "COP 48M (above 10M UIAF threshold), xgb=0.83, corporate. Strong UIAF Circular 002 match."
-}
-
-scenario_safe() {
-    run_investigation \
-        "8. Safe Retail Customer" \
-        "LIVE-SAFE-008" \
-        "DISMISS" \
-        "MXN 8,500, xgb=0.22, retail. Velocity trigger only, amount below threshold."
-}
-
-# ── Main ──────────────────────────────────────────────────────────────────────
+# ── Main ───────────────────────────────────────────────────────────────────────
 echo -e "${BOLD}${BLUE}"
 echo "  ╔═══════════════════════════════════════════╗"
 echo "  ║   Compliance AI — Live Test Suite         ║"
@@ -263,14 +238,14 @@ echo -e "${NC}"
 check_api_health
 
 case "$SCENARIO" in
-    low-risk)    scenario_low_risk ;;
-    high-risk)   scenario_high_risk ;;
-    pep-small)   scenario_pep_small ;;
-    pep-large)   scenario_pep_large ;;
-    mid-risk)    scenario_mid_risk ;;
-    multi-ccy)   scenario_multi_ccy ;;
-    corp)        scenario_corp ;;
-    safe)        scenario_safe ;;
+    low-risk)  scenario_low_risk  ;;
+    high-risk) scenario_high_risk ;;
+    pep-small) scenario_pep_small ;;
+    pep-large) scenario_pep_large ;;
+    mid-risk)  scenario_mid_risk  ;;
+    multi-ccy) scenario_multi_ccy ;;
+    corp)      scenario_corp      ;;
+    safe)      scenario_safe      ;;
     all)
         scenario_low_risk
         scenario_high_risk
@@ -288,9 +263,26 @@ case "$SCENARIO" in
         ;;
 esac
 
+# ── Summary ────────────────────────────────────────────────────────────────────
 echo ""
-echo -e "${BOLD}${GREEN}═══════════════════════════════════════════${NC}"
-echo -e "${BOLD}${GREEN}  All tests complete.${NC}"
-echo -e "${BOLD}${GREEN}  Langfuse traces: http://localhost:3001${NC}"
-echo -e "${BOLD}${GREEN}  Swagger UI:      ${BASE_URL}/docs${NC}"
-echo -e "${BOLD}${GREEN}═══════════════════════════════════════════${NC}"
+echo -e "${BOLD}${BLUE}═══════════════════════════════════════════${NC}"
+if [[ $SCENARIO_COUNT -gt 0 ]]; then
+    echo -e "${BOLD}  Results: ${PASS_COUNT}/${SCENARIO_COUNT} decisions matched expected${NC}"
+fi
+echo -e "${GREEN}  Langfuse traces: http://localhost:3001${NC}"
+echo -e "${GREEN}  Swagger UI:      ${BASE_URL}/docs${NC}"
+echo -e "${BOLD}${BLUE}═══════════════════════════════════════════${NC}"
+
+# ── LLM Judge ─────────────────────────────────────────────────────────────────
+_should_judge=false
+if   [[ "$RUN_JUDGE" == "true" ]]; then
+    _should_judge=true
+elif [[ "$RUN_JUDGE" == "auto" && "$SCENARIO" == "all" && $SCENARIO_COUNT -gt 0 ]]; then
+    _should_judge=true
+fi
+
+if [[ "$_should_judge" == "true" ]]; then
+    cd "$BACKEND_DIR"
+    uv run python "${SCRIPTS_DIR}/llm_judge.py" "$RESULTS_FILE" \
+        || warn "LLM judge evaluation failed (check OPENAI_API_KEY in backend/.env)"
+fi

@@ -1,4 +1,8 @@
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException
+
+logger = logging.getLogger(__name__)
 
 from compliance_agent.api.dependencies import (
     get_alert_repo,
@@ -25,17 +29,21 @@ async def investigate_alert(
     _request: InvestigateRequest = InvestigateRequest(),
     pipeline_service: PipelineService = Depends(get_pipeline_service),
 ) -> InvestigateResponse:
+    logger.info("Investigating alert %s", alert_id)
     try:
         final_state = await pipeline_service.process_alert(alert_id)
     except Exception as exc:
+        logger.error("Pipeline failed for alert %s: %s", alert_id, exc, exc_info=True)
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
     risk_data = final_state.get("risk_analysis", {})
     decision_data = final_state.get("decision", {})
 
+    decision_type = decision_data.get("decision_type", "UNKNOWN")
+    logger.info("Alert %s → %s", alert_id, decision_type)
     return InvestigateResponse(
         alert_id=alert_id,
-        status=decision_data.get("decision_type", "UNKNOWN"),
+        status=decision_type,
         risk_analysis=risk_data or None,
         decision=decision_data or None,
         langfuse_trace_id=final_state.get("langfuse_trace_id", ""),
@@ -69,7 +77,12 @@ async def get_audit_trail(
     alert_id: str,
     audit_service: AuditService = Depends(get_audit_service),
 ) -> AuditTrailResponse:
-    events = await audit_service.get_audit_trail(alert_id)
+    logger.info("Fetching audit trail for alert %s", alert_id)
+    try:
+        events = await audit_service.get_audit_trail(alert_id)
+    except Exception as exc:
+        logger.error("Audit trail fetch failed for alert %s: %s", alert_id, exc, exc_info=True)
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
     return AuditTrailResponse(
         alert_id=alert_id,
         events=[

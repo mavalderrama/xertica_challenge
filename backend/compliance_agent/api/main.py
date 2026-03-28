@@ -1,3 +1,4 @@
+import logging
 import os
 import sys
 
@@ -12,6 +13,12 @@ if _backend_dir not in sys.path:
     sys.path.insert(0, _backend_dir)
 
 load_dotenv()
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    datefmt="%Y-%m-%dT%H:%M:%S",
+)
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings.local")
 django.setup()
