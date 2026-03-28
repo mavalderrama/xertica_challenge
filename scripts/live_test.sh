@@ -226,6 +226,66 @@ scenario_corp()      {
 scenario_safe()      {
     run_investigation "Safe Retail Customer"      "LIVE-SAFE-008"      "DISMISS"       "" 8
 }
+scenario_struct()    {
+    run_investigation "COP Structuring Pattern"   "LIVE-STRUCT-009"    "ESCALATE"      "" 9
+}
+scenario_new_acct()  {
+    run_investigation "New Account Large USD"     "LIVE-NEW-ACCT-010"  "REQUEST_INFO"  "" 10
+}
+scenario_micro()     {
+    run_investigation "Micro-Transaction USD"     "LIVE-MICRO-011"     "DISMISS"       "" 11
+}
+scenario_pep_corp()  {
+    run_investigation "PEP Corporate High USD"    "LIVE-PEP-CORP-012"  "ESCALATE"      "" 12
+}
+scenario_high_pen()  {
+    run_investigation "High PEN Above Threshold"  "LIVE-HIGH-PEN-013"  "ESCALATE"      "" 13
+}
+scenario_safe_pen()  {
+    run_investigation "Safe PEN Retail"           "LIVE-SAFE-PEN-014"  "DISMISS"       "" 14
+}
+scenario_under_thresh() {
+    run_investigation "USD Structuring CNBV"      "LIVE-UNDER-THRESH-015" "ESCALATE"   "" 15
+}
+scenario_intl_wire() {
+    run_investigation "FATF High-Risk Wire"       "LIVE-INTL-WIRE-016" "ESCALATE"      "" 16
+}
+scenario_sme_low()   {
+    run_investigation "SME Low-Risk MXN"          "LIVE-SME-LOW-017"   "DISMISS"       "" 17
+}
+scenario_id_change() {
+    run_investigation "Identity Change PEN"       "LIVE-ID-CHANGE-018" "REQUEST_INFO"  "" 18
+}
+scenario_large_mxn() {
+    run_investigation "Large MXN Wire"            "LIVE-LARGE-MXN-019" "ESCALATE"      "" 19
+}
+scenario_remittance() {
+    run_investigation "Family Remittance USD"     "LIVE-REMITTANCE-020" "DISMISS"      "" 20
+}
+scenario_odd_timing() {
+    run_investigation "Unusual-Hour PEN"          "LIVE-ODD-TIMING-021" "REQUEST_INFO" "" 21
+}
+scenario_large_usd() {
+    run_investigation "Large USD SME Wire"        "LIVE-LARGE-USD-022" "ESCALATE"      "" 22
+}
+scenario_pep_pen()   {
+    run_investigation "PEP Small PEN"             "LIVE-PEP-PEN-023"   "ESCALATE"      "" 23
+}
+scenario_below_cop() {
+    run_investigation "Below-Threshold COP"       "LIVE-BELOW-COP-024" "DISMISS"       "" 24
+}
+scenario_corp_med()  {
+    run_investigation "Corporate MXN Unusual"     "LIVE-CORP-MED-025"  "REQUEST_INFO"  "" 25
+}
+scenario_mule()      {
+    run_investigation "Money-Mule Pass-Through"   "LIVE-MULE-026"      "ESCALATE"      "" 26
+}
+scenario_tiny_cop()  {
+    run_investigation "Tiny COP Routine"          "LIVE-TINY-COP-027"  "DISMISS"       "" 27
+}
+scenario_income_gap() {
+    run_investigation "Income Gap COP"            "LIVE-INCOME-GAP-028" "REQUEST_INFO" "" 28
+}
 
 # ── Main ───────────────────────────────────────────────────────────────────────
 echo -e "${BOLD}${BLUE}"
@@ -238,14 +298,34 @@ echo -e "${NC}"
 check_api_health
 
 case "$SCENARIO" in
-    low-risk)  scenario_low_risk  ;;
-    high-risk) scenario_high_risk ;;
-    pep-small) scenario_pep_small ;;
-    pep-large) scenario_pep_large ;;
-    mid-risk)  scenario_mid_risk  ;;
-    multi-ccy) scenario_multi_ccy ;;
-    corp)      scenario_corp      ;;
-    safe)      scenario_safe      ;;
+    low-risk)     scenario_low_risk    ;;
+    high-risk)    scenario_high_risk   ;;
+    pep-small)    scenario_pep_small   ;;
+    pep-large)    scenario_pep_large   ;;
+    mid-risk)     scenario_mid_risk    ;;
+    multi-ccy)    scenario_multi_ccy   ;;
+    corp)         scenario_corp        ;;
+    safe)         scenario_safe        ;;
+    struct)       scenario_struct      ;;
+    new-acct)     scenario_new_acct    ;;
+    micro)        scenario_micro       ;;
+    pep-corp)     scenario_pep_corp    ;;
+    high-pen)     scenario_high_pen    ;;
+    safe-pen)     scenario_safe_pen    ;;
+    under-thresh) scenario_under_thresh ;;
+    intl-wire)    scenario_intl_wire   ;;
+    sme-low)      scenario_sme_low     ;;
+    id-change)    scenario_id_change   ;;
+    large-mxn)    scenario_large_mxn   ;;
+    remittance)   scenario_remittance  ;;
+    odd-timing)   scenario_odd_timing  ;;
+    large-usd)    scenario_large_usd   ;;
+    pep-pen)      scenario_pep_pen     ;;
+    below-cop)    scenario_below_cop   ;;
+    corp-med)     scenario_corp_med    ;;
+    mule)         scenario_mule        ;;
+    tiny-cop)     scenario_tiny_cop    ;;
+    income-gap)   scenario_income_gap  ;;
     all)
         scenario_low_risk
         scenario_high_risk
@@ -255,10 +335,33 @@ case "$SCENARIO" in
         scenario_multi_ccy
         scenario_corp
         scenario_safe
+        scenario_struct
+        scenario_new_acct
+        scenario_micro
+        scenario_pep_corp
+        scenario_high_pen
+        scenario_safe_pen
+        scenario_under_thresh
+        scenario_intl_wire
+        scenario_sme_low
+        scenario_id_change
+        scenario_large_mxn
+        scenario_remittance
+        scenario_odd_timing
+        scenario_large_usd
+        scenario_pep_pen
+        scenario_below_cop
+        scenario_corp_med
+        scenario_mule
+        scenario_tiny_cop
+        scenario_income_gap
         ;;
     *)
         fail "Unknown scenario: ${SCENARIO}"
-        echo "  Valid scenarios: low-risk | high-risk | pep-small | pep-large | mid-risk | multi-ccy | corp | safe | all"
+        echo "  Valid scenarios: low-risk | high-risk | pep-small | pep-large | mid-risk | multi-ccy | corp | safe"
+        echo "                   struct | new-acct | micro | pep-corp | high-pen | safe-pen | under-thresh | intl-wire"
+        echo "                   sme-low | id-change | large-mxn | remittance | odd-timing | large-usd | pep-pen"
+        echo "                   below-cop | corp-med | mule | tiny-cop | income-gap | all"
         exit 1
         ;;
 esac

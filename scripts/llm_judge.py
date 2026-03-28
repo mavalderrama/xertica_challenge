@@ -316,13 +316,210 @@ def render_report(scenarios: list[dict], evaluations: list[dict]) -> None:
         for key, name in dims:
             d  = ev.get(key, {})
             s  = d.get("score", 0)
-            ex = (d.get("explanation") or "")[:95]
+            ex = d.get("explanation") or ""
             print(f"      {_score_fmt(s)}  {DIM}{name}: {ex}{NC}")
 
         if ev.get("critical_failure"):
             reason = ev.get("critical_failure_reason") or ""
             print(f"      {RED}{BOLD}⚠ CRITICAL FAILURE: {reason}{NC}")
         print()
+
+
+# ── Markdown report ───────────────────────────────────────────────────────────
+
+def write_markdown_report(
+    scenarios: list[dict],
+    evaluations: list[dict],
+    out_path: Path,
+    model: str,
+) -> None:
+    """Write a full, untruncated judge report to a Markdown file."""
+    import datetime
+
+    now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    lines: list[str] = []
+
+    # ── Header ────────────────────────────────────────────────────────────────
+    lines += [
+        "# Compliance AI — LLM Judge Evaluation Report",
+        "",
+        f"**Generated:** {now}  ",
+        f"**Model:** `{model}`  ",
+        f"**Scenarios evaluated:** {len(scenarios)}",
+        "",
+        "---",
+        "",
+    ]
+
+    # ── Summary table ─────────────────────────────────────────────────────────
+    lines += [
+        "## Summary",
+        "",
+        "| # | Scenario | Decision | Expected | Match | Correctness | Compliance | Reasoning | Risk Score | Total | Critical |",
+        "|---|----------|----------|----------|-------|-------------|------------|-----------|------------|-------|----------|",
+    ]
+
+    total_pts = 0
+    max_pts = 0
+    crit_count = 0
+    pep_correct = 0
+    pep_total = 0
+
+    for scenario, ev in zip(scenarios, evaluations):
+        num      = scenario.get("scenario_number", "?")
+        label    = scenario.get("scenario_label", "?")
+        dec      = scenario.get("decision", {}).get("decision_type", "?")
+        expected = scenario.get("expected_decision", "?")
+        matched  = scenario.get("matched", False)
+        s_dec    = ev.get("decision_correctness",  {}).get("score", 0)
+        s_comp   = ev.get("regulatory_compliance", {}).get("score", 0)
+        s_reason = ev.get("reasoning_quality",     {}).get("score", 0)
+        s_risk   = ev.get("risk_score_accuracy",   {}).get("score", 0)
+        row_sum  = s_dec + s_comp + s_reason + s_risk
+        crit     = ev.get("critical_failure", False)
+        total_pts += row_sum
+        max_pts   += 20
+        if crit:
+            crit_count += 1
+
+        is_pep = scenario.get("alert_data", {}).get("is_pep", False)
+        if is_pep:
+            pep_total += 1
+            if dec == "ESCALATE":
+                pep_correct += 1
+
+        match_icon = "✅" if matched else "⚠️"
+        crit_icon  = "🚨" if crit else ""
+        lines.append(
+            f"| {num} | {label} | **{dec}** | {expected} | {match_icon} "
+            f"| {s_dec}/5 | {s_comp}/5 | {s_reason}/5 | {s_risk}/5 "
+            f"| **{row_sum}/20** | {crit_icon} |"
+        )
+
+    pct = (total_pts / max_pts * 100) if max_pts else 0
+    pep_pct = (pep_correct / pep_total * 100) if pep_total else 100
+
+    lines += [
+        "",
+        f"**Overall score:** {total_pts}/{max_pts} ({pct:.1f}%)  ",
+        f"**Critical failures:** {crit_count}  ",
+        f"**PEP compliance:** {pep_correct}/{pep_total} ({pep_pct:.0f}%)",
+        "",
+        "---",
+        "",
+    ]
+
+    # ── Per-scenario detail ───────────────────────────────────────────────────
+    lines += [
+        "## Detailed Findings",
+        "",
+    ]
+
+    dim_keys = [
+        ("decision_correctness",  "Decision Correctness"),
+        ("regulatory_compliance", "Regulatory Compliance"),
+        ("reasoning_quality",     "Reasoning Quality"),
+        ("risk_score_accuracy",   "Risk Score Accuracy"),
+    ]
+
+    for scenario, ev in zip(scenarios, evaluations):
+        num      = scenario.get("scenario_number", "?")
+        label    = scenario.get("scenario_label", "?")
+        ext_id   = scenario.get("external_alert_id", "?")
+        matched  = scenario.get("matched", False)
+        crit     = ev.get("critical_failure", False)
+        crit_rsn = ev.get("critical_failure_reason") or ""
+        alert    = scenario.get("alert_data", {})
+        inv      = scenario.get("investigation", {})
+        risk     = scenario.get("risk_analysis", {})
+        dec      = scenario.get("decision", {})
+        expected = scenario.get("expected_decision", "?")
+        elapsed  = scenario.get("elapsed_seconds", 0)
+        cost     = scenario.get("total_cost_usd", 0)
+
+        match_icon = "✅" if matched else "⚠️"
+        crit_badge = " 🚨 **CRITICAL FAILURE**" if crit else ""
+
+        lines += [
+            f"### Scenario {num}: {label} {match_icon}{crit_badge}",
+            "",
+            "#### Alert Profile",
+            "",
+            f"| Field | Value |",
+            f"|-------|-------|",
+            f"| External ID | `{ext_id}` |",
+            f"| Amount | {alert.get('amount')} {alert.get('currency')} |",
+            f"| Is PEP | {alert.get('is_pep', False)} |",
+            f"| XGBoost Score | {alert.get('xgboost_score')} |",
+            f"| Segment | {alert.get('segment')} |",
+            f"| Elapsed | {elapsed}s |",
+            f"| Cost | ${cost:.6f} |",
+            "",
+            "#### Investigation (90-day window)",
+            "",
+            f"| Field | Value |",
+            f"|-------|-------|",
+            f"| Transactions | {inv.get('transaction_count_90d')} |",
+            f"| Total amount | {inv.get('total_amount_90d')} {alert.get('currency')} |",
+            f"| Currencies | {', '.join(inv.get('currencies', []))} |",
+            f"| Countries | {', '.join(inv.get('countries', []))} |",
+            f"| Documents | {inv.get('documents_count')} |",
+            "",
+            "#### Risk Analysis",
+            "",
+            f"**Score:** {risk.get('risk_score')}/10  ",
+            f"**Anomalous patterns:** {'; '.join(risk.get('anomalous_patterns', [])) or 'none'}",
+            "",
+            f"**Justification:**",
+            f"> {risk.get('justification', 'N/A')}",
+            "",
+            f"**Human summary:**",
+            f"> {risk.get('human_summary', 'N/A')}",
+            "",
+            "#### Decision",
+            "",
+            f"**Decision type:** `{dec.get('decision_type')}` (expected: `{expected}`)  ",
+            f"**Confidence:** {dec.get('confidence')}  ",
+            f"**PEP override:** {dec.get('is_pep_override_applied', False)}",
+            "",
+            "**Step-by-step reasoning:**",
+            "",
+            f"{dec.get('step_by_step_reasoning', 'N/A')}",
+            "",
+        ]
+
+        regs = dec.get("regulations_cited", [])
+        if regs:
+            lines += [
+                "**Regulations cited:**",
+                "",
+            ]
+            for reg in regs:
+                lines.append(
+                    f"- **{reg.get('source')}** — {reg.get('article')}: "
+                    f"{reg.get('text', '')} *(confidence: {reg.get('confidence')})*"
+                )
+            lines.append("")
+
+        lines += ["#### Judge Scores", ""]
+        for key, name in dim_keys:
+            d  = ev.get(key, {})
+            s  = d.get("score", 0)
+            ex = d.get("explanation") or ""
+            lines.append(f"**{name}:** {s}/5  ")
+            lines.append(f"> {ex}")
+            lines.append("")
+
+        if crit:
+            lines += [
+                f"**🚨 Critical failure:** {crit_rsn}",
+                "",
+            ]
+
+        lines += ["---", ""]
+
+    out_path.write_text("\n".join(lines), encoding="utf-8")
+    print(f"\n  📄 Full report written to: {out_path}")
 
 
 # ── Bootstrap ─────────────────────────────────────────────────────────────────
@@ -402,6 +599,13 @@ def main() -> int:
 
     print(" " * 70, end="\r")  # clear progress line
     render_report(scenarios, evaluations)
+
+    # Write full untruncated report to Markdown
+    import datetime
+    ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    md_path = _HERE.parent / f"judge_report_{ts}.md"
+    write_markdown_report(scenarios, evaluations, md_path, model)
+
     return 0
 
 

@@ -1,4 +1,4 @@
-.PHONY: install dev-install migrate makemigrations run test test-unit test-integration lint format typecheck docker-up docker-down seed seed-clear index-regulations live-test live-test-judge clean
+.PHONY: install dev-install migrate makemigrations run test test-unit test-integration lint format typecheck docker-up docker-down seed seed-clear index-regulations live-test live-test-judge populate clean
 
 BACKEND := backend
 
@@ -55,6 +55,8 @@ live-test:
 
 live-test-judge:
 	bash scripts/live_test.sh all http://localhost:8000 --judge
+
+populate: migrate seed index-regulations live-test-judge
 
 clean:
 	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null; \

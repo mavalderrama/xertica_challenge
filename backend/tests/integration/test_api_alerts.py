@@ -1,5 +1,5 @@
 import uuid
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from httpx import ASGITransport, AsyncClient
@@ -21,6 +21,7 @@ async def test_health_endpoint(app):
     assert response.json()["status"] == "ok"
 
 
+@pytest.mark.django_db(transaction=True)
 @pytest.mark.asyncio
 async def test_readiness_endpoint(app):
     """GET /readiness returns 200 when DB is reachable."""
@@ -35,6 +36,8 @@ async def test_readiness_endpoint(app):
 @pytest.mark.asyncio
 async def test_investigate_alert_endpoint(app, sample_alert):
     """POST /api/v1/alerts/{id}/investigate returns investigation result."""
+    from compliance_agent.api.dependencies import get_pipeline_service, get_tracer
+
     mock_pipeline_service = MagicMock()
     mock_pipeline_service.process_alert = AsyncMock(
         return_value={
@@ -60,22 +63,25 @@ async def test_investigate_alert_endpoint(app, sample_alert):
                 "is_pep_override_applied": False,
             },
             "errors": [],
-            "langfuse_trace_id": "",
+            "langfuse_trace_id": "test-trace-id",
         }
     )
 
-    # get_pipeline_service is used via FastAPI Depends in the alerts router.
-    # Patch the dependency at the source location used by the router.
-    with patch(
-        "compliance_agent.api.dependencies.get_pipeline_service",
-        return_value=mock_pipeline_service,
-    ):
+    mock_tracer = MagicMock()
+    mock_tracer.create_trace_id = MagicMock(return_value="test-trace-id")
+
+    # Use FastAPI dependency_overrides — the only reliable way to replace Depends() in tests.
+    app.dependency_overrides[get_pipeline_service] = lambda: mock_pipeline_service
+    app.dependency_overrides[get_tracer] = lambda: mock_tracer
+    try:
         async with AsyncClient(
             transport=ASGITransport(app=app), base_url="http://test"
         ) as client:
             response = await client.post(
                 f"/api/v1/alerts/{sample_alert.id}/investigate"
             )
+    finally:
+        app.dependency_overrides.clear()
 
     assert response.status_code == 200
     data = response.json()

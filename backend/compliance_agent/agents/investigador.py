@@ -25,12 +25,14 @@ class InvestigadorAgent(BaseAgent):
         gcs_tool: GCSToolInterface,
         investigation_repo: IInvestigationRepository,
         alert_repo: IAlertRepository,
+        audit_service: Any,
     ) -> None:
         super().__init__(llm, tracer)
         self.bq_tool = bq_tool
         self.gcs_tool = gcs_tool
         self.investigation_repo = investigation_repo
         self.alert_repo = alert_repo
+        self.audit_service = audit_service
 
     async def run(self, state: dict) -> dict:
         alert_data: dict = state["alert_data"]
@@ -78,5 +80,17 @@ class InvestigadorAgent(BaseAgent):
             duration_seconds=round(duration, 3),
         )
         investigation = await self.investigation_repo.save(investigation)
+
+        duration_ms = int(duration * 1000)
+        await self.audit_service.log_agent_event(
+            alert_id=alert_id,
+            event_type="INVESTIGATION",
+            agent_name="InvestigadorAgent",
+            input_snapshot={"customer_id": customer_id},
+            output_snapshot=structured_context,
+            langfuse_trace_id=state.get("langfuse_trace_id", ""),
+            duration_ms=duration_ms,
+            token_cost_usd=0.0,
+        )
 
         return {**state, "investigation": {"id": str(investigation.id), **structured_context}}

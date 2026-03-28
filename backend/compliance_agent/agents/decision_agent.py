@@ -1,3 +1,4 @@
+import time
 from typing import Any
 
 from langchain_core.output_parsers import JsonOutputParser
@@ -5,9 +6,9 @@ from langchain_core.prompts import ChatPromptTemplate
 
 from compliance_agent.agents.base import BaseAgent
 from compliance_agent.models import Decision
+from compliance_agent.observability import estimate_cost
 from compliance_agent.rag.interfaces import IRetriever
 from compliance_agent.repositories.interfaces import (
-    IAuditLogRepository,
     IDecisionRepository,
     IRiskAnalysisRepository,
 )
@@ -19,10 +20,42 @@ DECISION_PROMPT = ChatPromptTemplate.from_messages(
             """You are a senior compliance officer AI for a Latin American financial institution.
 Your decisions must cite specific regulations from UIAF (Colombia), CNBV (Mexico), or SBS (Peru).
 
-Available decisions:
-- ESCALATE: Requires human review. Mandatory for PEP, risk >= 8, or regulatory obligation.
-- DISMISS: Alert is not suspicious. Document reasoning clearly.
-- REQUEST_INFO: More information needed before deciding.
+## Decision Criteria
+
+**DISMISS** — use when ALL of the following are true:
+- Risk score ≤ 4
+- Non-PEP customer
+- Alert amount is below the applicable reporting threshold (COP 10,000,000 / USD 7,500 / PEN 10,000)
+- No high-severity anomalous patterns (structuring, sanction lists, PEP-linked)
+Dismissing low-risk alerts is the correct outcome. Over-escalation wastes compliance officer
+time and degrades system effectiveness. A low risk score (1–4) with a below-threshold amount
+and no PEP flag should be DISMISSED.
+
+**REQUEST_INFO** — use when there is genuine ambiguity that additional documentation
+would concretely resolve. Appropriate for risk 5–7 when:
+- The customer recently changed declared profession or income source
+- The amount is moderately above threshold but the xgboost score is borderline (0.55–0.70)
+- Unusual patterns exist but could have a legitimate explanation
+Do NOT use REQUEST_INFO for clearly low-risk alerts (risk ≤ 4) — that is a DISMISS.
+
+**ESCALATE** — use when ANY of the following are true:
+- Risk score ≥ 8
+- PEP customer (already handled by hard rule before this prompt)
+- Confirmed structuring pattern (fraccionamiento)
+- Sanction list match
+- Amount is far above threshold (>5x) with high xgboost score (≥0.65)
+
+## Regulatory Reporting Thresholds
+- SARLAFT (Colombia): COP 10,000,000 per operation for natural persons
+- CNBV (Mexico): USD 7,500 equivalent per operation (≈ MXN 127,500)
+- SBS (Peru): PEN 10,000 per operation
+
+## XGBoost Score Context
+The XGBoost score is a calibrated ML fraud-detection score (0.0–1.0):
+- 0.00–0.30 = LOW — strong signal that this is not fraud
+- 0.31–0.59 = MEDIUM — some signals, review warranted
+- 0.60–0.79 = HIGH — significant fraud indicators
+- 0.80–1.00 = CRITICAL — very likely fraudulent
 
 Respond ONLY with valid JSON:
 {{
@@ -45,6 +78,7 @@ Respond ONLY with valid JSON:
 Customer Context:
 - Is PEP: {is_pep}
 - Alert amount: {amount} {currency}
+- XGBoost Score: {xgboost_score}
 
 Relevant Regulations Retrieved:
 {regulations}
@@ -74,19 +108,20 @@ class DecisionAgent(BaseAgent):
         retriever: IRetriever,
         decision_repo: IDecisionRepository,
         risk_analysis_repo: IRiskAnalysisRepository,
-        audit_log_repo: IAuditLogRepository,
+        audit_service: Any,
     ) -> None:
         super().__init__(llm, tracer)
         self.retriever = retriever
         self.decision_repo = decision_repo
         self.risk_analysis_repo = risk_analysis_repo
-        self.audit_log_repo = audit_log_repo
+        self.audit_service = audit_service
 
     async def run(self, state: dict) -> dict:
         alert_data: dict = state["alert_data"]
         risk_data: dict = state["risk_analysis"]
         is_pep: bool = alert_data.get("is_pep", False)
 
+        start = time.monotonic()
         risk_analysis = await self.risk_analysis_repo.get_by_id(risk_data["id"])
 
         # PEP hard-rule: deterministic escalation, no LLM needed
@@ -119,7 +154,8 @@ class DecisionAgent(BaseAgent):
                 is_pep_override_applied=True,
             )
             decision = await self.decision_repo.save(decision)
-            await self._write_audit_log(state, decision, is_pep_override=True)
+            duration_ms = int((time.monotonic() - start) * 1000)
+            await self._write_audit_log(state, decision, is_pep_override=True, duration_ms=duration_ms, token_cost_usd=0.0)
             return self._build_output(state, decision)
 
         # RAG retrieval for non-PEP decisions
@@ -140,9 +176,16 @@ class DecisionAgent(BaseAgent):
                 "is_pep": is_pep,
                 "amount": alert_data.get("amount", 0),
                 "currency": alert_data.get("currency", "USD"),
+                "xgboost_score": alert_data.get("xgboost_score", "N/A"),
                 "regulations": regulations_text or "No specific regulations retrieved.",
             }
         )
+
+        usage_metadata = getattr(self.llm, "last_token_usage", {})
+        token_count = usage_metadata.get("total_tokens", 0) if usage_metadata else 0
+        input_tokens = token_count // 2
+        output_tokens = token_count - input_tokens
+        cost_usd = estimate_cost(input_tokens, output_tokens)
 
         decision = Decision(
             risk_analysis=risk_analysis,
@@ -153,13 +196,15 @@ class DecisionAgent(BaseAgent):
             is_pep_override_applied=False,
         )
         decision = await self.decision_repo.save(decision)
-        await self._write_audit_log(state, decision, is_pep_override=False)
+        duration_ms = int((time.monotonic() - start) * 1000)
+        await self._write_audit_log(state, decision, is_pep_override=False, duration_ms=duration_ms, token_cost_usd=cost_usd)
         return self._build_output(state, decision)
 
     async def _write_audit_log(
-        self, state: dict, decision: Decision, is_pep_override: bool
+        self, state: dict, decision: Decision, is_pep_override: bool,
+        duration_ms: int = 0, token_cost_usd: float = 0.0,
     ) -> None:
-        await self.audit_log_repo.create(
+        await self.audit_service.log_agent_event(
             alert_id=state["alert_id"],
             event_type="DECISION",
             agent_name="DecisionAgent",
@@ -170,6 +215,8 @@ class DecisionAgent(BaseAgent):
                 "is_pep_override": is_pep_override,
             },
             langfuse_trace_id=state.get("langfuse_trace_id", ""),
+            duration_ms=duration_ms,
+            token_cost_usd=token_cost_usd,
         )
 
     def _build_output(self, state: dict, decision: Decision) -> dict:

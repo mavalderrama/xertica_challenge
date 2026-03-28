@@ -126,6 +126,8 @@ def get_pipeline_service():
     from compliance_agent.graph import build_compliance_pipeline
     from compliance_agent.services import PipelineService
 
+    audit_service = get_audit_service()
+
     investigador = InvestigadorAgent(
         llm=get_llm(),
         tracer=get_tracer(),
@@ -133,12 +135,14 @@ def get_pipeline_service():
         gcs_tool=get_gcs_tool(),
         investigation_repo=get_investigation_repo(),
         alert_repo=get_alert_repo(),
+        audit_service=audit_service,
     )
     risk_analyzer = RiskAnalyzerAgent(
         llm=get_llm(),
         tracer=get_tracer(),
         risk_analysis_repo=get_risk_analysis_repo(),
         investigation_repo=get_investigation_repo(),
+        audit_service=audit_service,
     )
     decision_agent = DecisionAgent(
         llm=get_llm(),
@@ -146,7 +150,7 @@ def get_pipeline_service():
         retriever=get_retriever(),
         decision_repo=get_decision_repo(),
         risk_analysis_repo=get_risk_analysis_repo(),
-        audit_log_repo=get_audit_log_repo(),
+        audit_service=audit_service,
     )
     compiled = build_compliance_pipeline(investigador, risk_analyzer, decision_agent)
     return PipelineService(compiled_graph=compiled, alert_repo=get_alert_repo())

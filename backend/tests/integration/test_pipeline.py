@@ -20,7 +20,7 @@ async def test_full_pipeline_non_pep(sample_alert):
         InvestigationRepository,
         RiskAnalysisRepository,
     )
-    from compliance_agent.services import PipelineService
+    from compliance_agent.services import AuditService, PipelineService
     from compliance_agent.tools import MockBigQueryTool, MockGCSTool
 
     # Use real repos against test DB; mock LLM and external services.
@@ -28,9 +28,11 @@ async def test_full_pipeline_non_pep(sample_alert):
     investigation_repo = InvestigationRepository()
     risk_analysis_repo = RiskAnalysisRepository()
     decision_repo = DecisionRepository()
-    audit_log_repo = AuditLogRepository()
+    audit_service = AuditService(AuditLogRepository())
 
     mock_llm = MagicMock()
+    mock_llm.model_name = "test-llm"          # Prevent MagicMock from masking getattr default
+    mock_llm.last_token_usage = {}             # Ensure token_count resolves to 0
     mock_tracer = MagicMock()
     mock_retriever = MagicMock()
     mock_retriever.retrieve = AsyncMock(return_value=[])
@@ -64,12 +66,14 @@ async def test_full_pipeline_non_pep(sample_alert):
             gcs_tool=MockGCSTool(),
             investigation_repo=investigation_repo,
             alert_repo=alert_repo,
+            audit_service=audit_service,
         )
         risk_analyzer = RiskAnalyzerAgent(
             llm=mock_llm,
             tracer=mock_tracer,
             risk_analysis_repo=risk_analysis_repo,
             investigation_repo=investigation_repo,
+            audit_service=audit_service,
         )
         decision_agent = DecisionAgent(
             llm=mock_llm,
@@ -77,7 +81,7 @@ async def test_full_pipeline_non_pep(sample_alert):
             retriever=mock_retriever,
             decision_repo=decision_repo,
             risk_analysis_repo=risk_analysis_repo,
-            audit_log_repo=audit_log_repo,
+            audit_service=audit_service,
         )
 
         compiled = build_compliance_pipeline(investigador, risk_analyzer, decision_agent)
@@ -107,16 +111,18 @@ async def test_full_pipeline_pep_always_escalates(sample_pep_alert):
         InvestigationRepository,
         RiskAnalysisRepository,
     )
-    from compliance_agent.services import PipelineService
+    from compliance_agent.services import AuditService, PipelineService
     from compliance_agent.tools import MockBigQueryTool, MockGCSTool
 
     alert_repo = AlertRepository()
     investigation_repo = InvestigationRepository()
     risk_analysis_repo = RiskAnalysisRepository()
     decision_repo = DecisionRepository()
-    audit_log_repo = AuditLogRepository()
+    audit_service = AuditService(AuditLogRepository())
 
     mock_llm = MagicMock()
+    mock_llm.model_name = "test-llm"          # Prevent MagicMock from masking getattr default
+    mock_llm.last_token_usage = {}             # Ensure token_count resolves to 0
     mock_tracer = MagicMock()
     mock_retriever = MagicMock()
     mock_retriever.retrieve = AsyncMock(return_value=[])
@@ -143,12 +149,14 @@ async def test_full_pipeline_pep_always_escalates(sample_pep_alert):
             gcs_tool=MockGCSTool(),
             investigation_repo=investigation_repo,
             alert_repo=alert_repo,
+            audit_service=audit_service,
         )
         risk_analyzer = RiskAnalyzerAgent(
             llm=mock_llm,
             tracer=mock_tracer,
             risk_analysis_repo=risk_analysis_repo,
             investigation_repo=investigation_repo,
+            audit_service=audit_service,
         )
         decision_agent = DecisionAgent(
             llm=mock_llm,
@@ -156,7 +164,7 @@ async def test_full_pipeline_pep_always_escalates(sample_pep_alert):
             retriever=mock_retriever,
             decision_repo=decision_repo,
             risk_analysis_repo=risk_analysis_repo,
-            audit_log_repo=audit_log_repo,
+            audit_service=audit_service,
         )
 
         compiled = build_compliance_pipeline(investigador, risk_analyzer, decision_agent)

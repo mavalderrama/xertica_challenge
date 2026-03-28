@@ -8,6 +8,7 @@ from compliance_agent.api.dependencies import (
     get_alert_repo,
     get_audit_service,
     get_pipeline_service,
+    get_tracer,
 )
 from compliance_agent.api.schemas.alert_schemas import (
     AlertStatusResponse,
@@ -28,10 +29,12 @@ async def investigate_alert(
     alert_id: str,
     _request: InvestigateRequest = InvestigateRequest(),
     pipeline_service: PipelineService = Depends(get_pipeline_service),
+    tracer=Depends(get_tracer),
 ) -> InvestigateResponse:
     logger.info("Investigating alert %s", alert_id)
+    trace_id = tracer.create_trace_id("investigate_alert", {"alert_id": alert_id})
     try:
-        final_state = await pipeline_service.process_alert(alert_id)
+        final_state = await pipeline_service.process_alert(alert_id, langfuse_trace_id=trace_id)
     except Exception as exc:
         logger.error("Pipeline failed for alert %s: %s", alert_id, exc, exc_info=True)
         raise HTTPException(status_code=500, detail=str(exc)) from exc

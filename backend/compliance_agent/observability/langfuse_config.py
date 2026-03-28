@@ -45,3 +45,11 @@ class LangfuseTracer:
 
     def get_langchain_handler(self, trace: Any) -> Any:
         return trace.get_langchain_handler()
+
+    def create_trace_id(self, name: str = "", metadata: dict | None = None) -> str:
+        """Generate a Langfuse trace ID using the v3 API. Returns empty string if unavailable."""
+        try:
+            client = self._get_client()
+            return client.create_trace_id()
+        except Exception:
+            return ""

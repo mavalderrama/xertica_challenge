@@ -20,7 +20,7 @@ def test_decision_types():
 
 
 @pytest.mark.asyncio
-async def test_pep_hard_rule_skips_llm(mock_llm, mock_tracer):
+async def test_pep_hard_rule_skips_llm(mock_llm, mock_tracer, mock_audit_service):
     from unittest.mock import patch
 
     from compliance_agent.agents.decision_agent import DecisionAgent
@@ -42,16 +42,13 @@ async def test_pep_hard_rule_skips_llm(mock_llm, mock_tracer):
     risk_analysis_repo = MagicMock()
     risk_analysis_repo.get_by_id = AsyncMock(return_value=MagicMock())
 
-    audit_log_repo = MagicMock()
-    audit_log_repo.create = AsyncMock(return_value=MagicMock())
-
     agent = DecisionAgent(
         llm=mock_llm,
         tracer=mock_tracer,
         retriever=retriever,
         decision_repo=decision_repo,
         risk_analysis_repo=risk_analysis_repo,
-        audit_log_repo=audit_log_repo,
+        audit_service=mock_audit_service,
     )
 
     state = {
@@ -82,7 +79,7 @@ async def test_pep_hard_rule_skips_llm(mock_llm, mock_tracer):
     mock_llm.ainvoke.assert_not_called()
     retriever.retrieve.assert_not_called()
     decision_repo.save.assert_called_once()
-    audit_log_repo.create.assert_called_once()
+    mock_audit_service.log_agent_event.assert_called_once()
 
     assert result["decision"]["decision_type"] == "ESCALATE"
     assert result["decision"]["is_pep_override_applied"] is True

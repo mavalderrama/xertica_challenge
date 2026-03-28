@@ -51,6 +51,15 @@ def mock_tracer():
 
 
 @pytest.fixture
+def mock_audit_service():
+    from unittest.mock import AsyncMock, MagicMock
+
+    service = MagicMock()
+    service.log_agent_event = AsyncMock()
+    return service
+
+
+@pytest.fixture
 def sample_alert(db):
     from datetime import datetime
 

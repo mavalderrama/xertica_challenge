@@ -8,14 +8,34 @@ Options:
     --clear    Delete all existing alerts before seeding
 
 Scenarios created:
-    1. Low-risk dismissal candidate       (CUST-LOW-001,   COP, non-PEP, xgb=0.31)
-    2. High-risk escalation candidate     (CUST-HIGH-002,  USD, non-PEP, xgb=0.89)
-    3. PEP alert — small amount           (CUST-PEP-003,   MXN, is_pep=True, xgb=0.45)
-    4. PEP alert — large amount           (CUST-PEP-004,   USD, is_pep=True, xgb=0.92)
-    5. Request-info candidate             (CUST-MID-005,   PEN, non-PEP, xgb=0.61)
-    6. Multi-currency suspicious          (CUST-MULTI-006, USD, non-PEP, xgb=0.77)
-    7. Corporate account, high volume     (CUST-CORP-007,  COP, non-PEP, xgb=0.83)
-    8. Returning low-risk customer        (CUST-SAFE-008,  MXN, non-PEP, xgb=0.22)
+    1.  Low-risk dismissal candidate           (CUST-LOW-001,    COP, non-PEP, xgb=0.31) → DISMISS
+    2.  High-risk escalation candidate         (CUST-HIGH-002,   USD, non-PEP, xgb=0.89) → ESCALATE
+    3.  PEP alert — small amount               (CUST-PEP-003,    MXN, is_pep=True, xgb=0.45) → ESCALATE
+    4.  PEP alert — large amount               (CUST-PEP-004,    USD, is_pep=True, xgb=0.92) → ESCALATE
+    5.  Request-info candidate                 (CUST-MID-005,    PEN, non-PEP, xgb=0.61) → REQUEST_INFO
+    6.  Multi-currency suspicious              (CUST-MULTI-006,  USD, non-PEP, xgb=0.77) → ESCALATE
+    7.  Corporate account, high volume         (CUST-CORP-007,   COP, non-PEP, xgb=0.83) → ESCALATE
+    8.  Returning low-risk customer            (CUST-SAFE-008,   MXN, non-PEP, xgb=0.22) → DISMISS
+    9.  COP structuring just-under threshold   (CUST-STRUCT-009, COP, non-PEP, xgb=0.76) → ESCALATE
+    10. New account large USD anomaly          (CUST-NEW-010,    USD, non-PEP, xgb=0.56) → REQUEST_INFO
+    11. Micro-transaction USD routine          (CUST-MICRO-011,  USD, non-PEP, xgb=0.14) → DISMISS
+    12. PEP corporate high-value USD           (CUST-PEP-012,    USD, is_pep=True, xgb=0.87) → ESCALATE
+    13. High PEN well above SBS threshold      (CUST-PEN-013,    PEN, non-PEP, xgb=0.79) → ESCALATE
+    14. Safe PEN below SBS threshold           (CUST-SAFE-014,   PEN, non-PEP, xgb=0.24) → DISMISS
+    15. USD structuring just under CNBV limit  (CUST-STRUCT-015, USD, non-PEP, xgb=0.83) → ESCALATE
+    16. International wire FATF jurisdiction   (CUST-WIRE-016,   USD, non-PEP, xgb=0.81) → ESCALATE
+    17. SME low-risk MXN below threshold       (CUST-SME-017,    MXN, non-PEP, xgb=0.33) → DISMISS
+    18. Identity change above SBS threshold    (CUST-IDCHG-018,  PEN, non-PEP, xgb=0.55) → REQUEST_INFO
+    19. Large MXN wire above CNBV threshold    (CUST-MXN-019,    MXN, non-PEP, xgb=0.88) → ESCALATE
+    20. Inbound remittance routine             (CUST-REM-020,    USD, non-PEP, xgb=0.16) → DISMISS
+    21. Unusual-hour transactions above SBS    (CUST-NIGHT-021,  PEN, non-PEP, xgb=0.63) → REQUEST_INFO
+    22. Large USD SME inconsistent profile     (CUST-LARGE-022,  USD, non-PEP, xgb=0.86) → ESCALATE
+    23. PEP small PEN — hard rule              (CUST-PEP-023,    PEN, is_pep=True, xgb=0.38) → ESCALATE
+    24. Low COP well below SARLAFT threshold   (CUST-LOW-024,    COP, non-PEP, xgb=0.27) → DISMISS
+    25. Corporate MXN unusual activity         (CUST-CORP-025,   MXN, non-PEP, xgb=0.59) → REQUEST_INFO
+    26. USD money-mule pass-through pattern    (CUST-MULE-026,   USD, non-PEP, xgb=0.84) → ESCALATE
+    27. Tiny COP micro-transaction             (CUST-TINY-027,   COP, non-PEP, xgb=0.11) → DISMISS
+    28. COP deposit vs declared income gap     (CUST-GAP-028,    COP, non-PEP, xgb=0.67) → REQUEST_INFO
 """
 
 from datetime import UTC, datetime, timedelta
@@ -233,7 +253,7 @@ class Command(BaseCommand):
                 "external_alert_id": "LIVE-SAFE-008",
                 "customer_id": "CUST-SAFE-008",
                 "is_pep": False,
-                "amount": "8500.00",        # MXN $8,500 — below $10,000 threshold
+                "amount": "8500.00",        # MXN $8,500 — below MXN 127K CNBV threshold
                 "currency": "MXN",
                 "transaction_date": now - timedelta(days=2),
                 "status": Alert.Status.PENDING,
@@ -243,6 +263,389 @@ class Command(BaseCommand):
                     "alert_type": "ROUTINE_CHECK",
                     "segment": "retail_individual",
                     "notes": "Low-score routine check. Triggered by velocity rule, not amount.",
+                },
+            },
+            # ── Scenario 9 ─────────────────────────────────────────────────────
+            # Expected: ESCALATE — structuring pattern: multiple COP deposits at
+            # COP 9.8M, just below the SARLAFT 10M individual threshold (CE 029/2014 §4.2.3)
+            {
+                "external_alert_id": "LIVE-STRUCT-009",
+                "customer_id": "CUST-STRUCT-009",
+                "is_pep": False,
+                "amount": "9800000.00",     # COP 9.8M — 98% of SARLAFT 10M threshold
+                "currency": "COP",
+                "transaction_date": now - timedelta(hours=5),
+                "status": Alert.Status.PENDING,
+                "xgboost_score": 0.76,
+                "raw_payload": {
+                    "source": "xgboost_v3",
+                    "alert_type": "STRUCTURING_PATTERN",
+                    "segment": "retail_individual",
+                    "notes": "Third deposit of COP 9.8M in the same week. Classic fraccionamiento pattern to stay below the SARLAFT reporting threshold.",
+                },
+            },
+            # ── Scenario 10 ────────────────────────────────────────────────────
+            # Expected: REQUEST_INFO — account opened only 45 days ago; first
+            # large USD transfer raises due-diligence questions before deciding
+            {
+                "external_alert_id": "LIVE-NEW-ACCT-010",
+                "customer_id": "CUST-NEW-010",
+                "is_pep": False,
+                "amount": "18500.00",       # USD $18,500 — well above CNBV USD 7,500
+                "currency": "USD",
+                "transaction_date": now - timedelta(hours=10),
+                "status": Alert.Status.PENDING,
+                "xgboost_score": 0.56,
+                "raw_payload": {
+                    "source": "xgboost_v3",
+                    "alert_type": "NEW_ACCOUNT_ANOMALY",
+                    "segment": "retail_individual",
+                    "notes": "Account opened 45 days ago. This is the first high-value transfer. Origin of funds not yet documented in KYC file.",
+                },
+            },
+            # ── Scenario 11 ────────────────────────────────────────────────────
+            # Expected: DISMISS — micro-transaction, very low xgboost, no risk signals
+            {
+                "external_alert_id": "LIVE-MICRO-011",
+                "customer_id": "CUST-MICRO-011",
+                "is_pep": False,
+                "amount": "320.00",         # USD $320 — trivial amount
+                "currency": "USD",
+                "transaction_date": now - timedelta(hours=1),
+                "status": Alert.Status.PENDING,
+                "xgboost_score": 0.14,
+                "raw_payload": {
+                    "source": "xgboost_v3",
+                    "alert_type": "ROUTINE_CHECK",
+                    "segment": "retail_individual",
+                    "notes": "Triggered by daily velocity rule. Amount is well below any reporting threshold.",
+                },
+            },
+            # ── Scenario 12 ────────────────────────────────────────────────────
+            # Expected: ESCALATE — PEP hard-rule + corporate segment + large USD
+            {
+                "external_alert_id": "LIVE-PEP-CORP-012",
+                "customer_id": "CUST-PEP-012",
+                "is_pep": True,
+                "amount": "92000.00",       # USD $92,000
+                "currency": "USD",
+                "transaction_date": now - timedelta(hours=4),
+                "status": Alert.Status.PENDING,
+                "xgboost_score": 0.87,
+                "raw_payload": {
+                    "source": "xgboost_v3",
+                    "alert_type": "PEP_HIGH_VALUE",
+                    "segment": "corporate",
+                    "entity_type": "SA",
+                    "pep_category": "domestic_official",
+                    "notes": "Corporate account controlled by a domestic PEP. Large USD wire with no documented commercial counterpart.",
+                },
+            },
+            # ── Scenario 13 ────────────────────────────────────────────────────
+            # Expected: ESCALATE — PEN 43K is 4.3x the SBS PEN 10K threshold,
+            # high xgboost, no documented business rationale
+            {
+                "external_alert_id": "LIVE-HIGH-PEN-013",
+                "customer_id": "CUST-PEN-013",
+                "is_pep": False,
+                "amount": "43000.00",       # PEN 43,000 — 4.3x SBS threshold (~USD 11.6K)
+                "currency": "PEN",
+                "transaction_date": now - timedelta(hours=7),
+                "status": Alert.Status.PENDING,
+                "xgboost_score": 0.79,
+                "raw_payload": {
+                    "source": "xgboost_v3",
+                    "alert_type": "HIGH_AMOUNT_TRANSFER",
+                    "segment": "retail_individual",
+                    "notes": "Single transfer at 4.3x the SBS reporting threshold. No declared business activity justifies this volume.",
+                },
+            },
+            # ── Scenario 14 ────────────────────────────────────────────────────
+            # Expected: DISMISS — PEN 3,800 is well below SBS PEN 10K threshold,
+            # low xgboost, clean retail profile
+            {
+                "external_alert_id": "LIVE-SAFE-PEN-014",
+                "customer_id": "CUST-SAFE-014",
+                "is_pep": False,
+                "amount": "3800.00",        # PEN 3,800 — 38% of SBS 10K threshold (~USD 1,027)
+                "currency": "PEN",
+                "transaction_date": now - timedelta(days=1),
+                "status": Alert.Status.PENDING,
+                "xgboost_score": 0.24,
+                "raw_payload": {
+                    "source": "xgboost_v3",
+                    "alert_type": "ROUTINE_CHECK",
+                    "segment": "retail_individual",
+                    "notes": "Amount well below SBS reporting threshold. Low-score routine velocity check.",
+                },
+            },
+            # ── Scenario 15 ────────────────────────────────────────────────────
+            # Expected: ESCALATE — recurring USD 7,300 transfers, just below the
+            # CNBV USD 7,500 Operación Relevante threshold (structuring / fraccionamiento)
+            {
+                "external_alert_id": "LIVE-UNDER-THRESH-015",
+                "customer_id": "CUST-STRUCT-015",
+                "is_pep": False,
+                "amount": "7300.00",        # USD $7,300 — 97% of CNBV USD 7,500 threshold
+                "currency": "USD",
+                "transaction_date": now - timedelta(hours=3),
+                "status": Alert.Status.PENDING,
+                "xgboost_score": 0.83,
+                "raw_payload": {
+                    "source": "xgboost_v3",
+                    "alert_type": "STRUCTURING_PATTERN",
+                    "segment": "retail_individual",
+                    "notes": "Fifth transfer this month of exactly USD 7,300 — systematically just below the CNBV Operación Relevante threshold of USD 7,500. Strong fraccionamiento indicator.",
+                },
+            },
+            # ── Scenario 16 ────────────────────────────────────────────────────
+            # Expected: ESCALATE — large USD wire to a FATF high-risk jurisdiction,
+            # high xgboost score, no documented commercial purpose
+            {
+                "external_alert_id": "LIVE-INTL-WIRE-016",
+                "customer_id": "CUST-WIRE-016",
+                "is_pep": False,
+                "amount": "34000.00",       # USD $34,000
+                "currency": "USD",
+                "transaction_date": now - timedelta(hours=9),
+                "status": Alert.Status.PENDING,
+                "xgboost_score": 0.81,
+                "raw_payload": {
+                    "source": "xgboost_v3",
+                    "alert_type": "INTERNATIONAL_WIRE",
+                    "segment": "retail_individual",
+                    "notes": "Wire transfer to a jurisdiction listed by FATF as high-risk (non-cooperative). Customer has no documented trade relationships in that region.",
+                },
+            },
+            # ── Scenario 17 ────────────────────────────────────────────────────
+            # Expected: DISMISS — SME with consistent MXN activity, low xgboost,
+            # amount well below CNBV MXN 127K threshold
+            {
+                "external_alert_id": "LIVE-SME-LOW-017",
+                "customer_id": "CUST-SME-017",
+                "is_pep": False,
+                "amount": "9200.00",        # MXN $9,200 — 7.2% of CNBV threshold (~USD 541)
+                "currency": "MXN",
+                "transaction_date": now - timedelta(hours=6),
+                "status": Alert.Status.PENDING,
+                "xgboost_score": 0.33,
+                "raw_payload": {
+                    "source": "xgboost_v3",
+                    "alert_type": "ROUTINE_CHECK",
+                    "segment": "sme",
+                    "notes": "Small routine MXN payment, consistent with SME operating expenses. Amount far below CNBV threshold.",
+                },
+            },
+            # ── Scenario 18 ────────────────────────────────────────────────────
+            # Expected: REQUEST_INFO — PEN 13,500 is above SBS threshold; combined
+            # with recent identity-data changes, more KYC verification is needed
+            {
+                "external_alert_id": "LIVE-ID-CHANGE-018",
+                "customer_id": "CUST-IDCHG-018",
+                "is_pep": False,
+                "amount": "13500.00",       # PEN 13,500 — 1.35x SBS threshold (~USD 3,649)
+                "currency": "PEN",
+                "transaction_date": now - timedelta(hours=14),
+                "status": Alert.Status.PENDING,
+                "xgboost_score": 0.55,
+                "raw_payload": {
+                    "source": "xgboost_v3",
+                    "alert_type": "UNUSUAL_PATTERN",
+                    "segment": "retail_individual",
+                    "notes": "Address and phone number updated 12 days ago. Transaction is above SBS threshold. Updated KYC documents have not yet been validated.",
+                },
+            },
+            # ── Scenario 19 ────────────────────────────────────────────────────
+            # Expected: ESCALATE — MXN 195K (~USD 11,470) is 1.5x the CNBV
+            # USD 7,500 Operación Relevante threshold, high xgboost
+            {
+                "external_alert_id": "LIVE-LARGE-MXN-019",
+                "customer_id": "CUST-MXN-019",
+                "is_pep": False,
+                "amount": "195000.00",      # MXN $195,000 — ~USD 11,470, 1.5x CNBV threshold
+                "currency": "MXN",
+                "transaction_date": now - timedelta(hours=11),
+                "status": Alert.Status.PENDING,
+                "xgboost_score": 0.88,
+                "raw_payload": {
+                    "source": "xgboost_v3",
+                    "alert_type": "HIGH_AMOUNT_TRANSFER",
+                    "segment": "retail_individual",
+                    "notes": "Single MXN wire significantly above the CNBV Operación Relevante threshold. No documented commercial justification on file.",
+                },
+            },
+            # ── Scenario 20 ────────────────────────────────────────────────────
+            # Expected: DISMISS — tiny inbound USD remittance, very low xgboost,
+            # consistent with declared family remittance profile
+            {
+                "external_alert_id": "LIVE-REMITTANCE-020",
+                "customer_id": "CUST-REM-020",
+                "is_pep": False,
+                "amount": "280.00",         # USD $280 — routine remittance
+                "currency": "USD",
+                "transaction_date": now - timedelta(hours=2),
+                "status": Alert.Status.PENDING,
+                "xgboost_score": 0.16,
+                "raw_payload": {
+                    "source": "xgboost_v3",
+                    "alert_type": "ROUTINE_CHECK",
+                    "segment": "retail_individual",
+                    "notes": "Regular inbound family remittance. Customer declared remittance income in KYC. Pattern is fully consistent with profile.",
+                },
+            },
+            # ── Scenario 21 ────────────────────────────────────────────────────
+            # Expected: REQUEST_INFO — PEN 16K above SBS threshold, combined with
+            # transactions clustered between 2-4am, warrants explanation
+            {
+                "external_alert_id": "LIVE-ODD-TIMING-021",
+                "customer_id": "CUST-NIGHT-021",
+                "is_pep": False,
+                "amount": "16000.00",       # PEN 16,000 — 1.6x SBS threshold (~USD 4,324)
+                "currency": "PEN",
+                "transaction_date": now - timedelta(hours=20),
+                "status": Alert.Status.PENDING,
+                "xgboost_score": 0.63,
+                "raw_payload": {
+                    "source": "xgboost_v3",
+                    "alert_type": "UNUSUAL_PATTERN",
+                    "segment": "retail_individual",
+                    "notes": "Four PEN transactions between 02:00 and 04:00 local time over the past 10 days, above SBS threshold. Customer has no night-shift or hospitality employment on record.",
+                },
+            },
+            # ── Scenario 22 ────────────────────────────────────────────────────
+            # Expected: ESCALATE — large USD transfer from an SME account whose
+            # declared activity (local retail) does not justify international wires
+            {
+                "external_alert_id": "LIVE-LARGE-USD-022",
+                "customer_id": "CUST-LARGE-022",
+                "is_pep": False,
+                "amount": "67000.00",       # USD $67,000
+                "currency": "USD",
+                "transaction_date": now - timedelta(hours=8),
+                "status": Alert.Status.PENDING,
+                "xgboost_score": 0.86,
+                "raw_payload": {
+                    "source": "xgboost_v3",
+                    "alert_type": "HIGH_AMOUNT_TRANSFER",
+                    "segment": "sme",
+                    "notes": "USD $67K outbound wire. SME declared activity is local retail commerce — no documented import/export activity to justify this amount.",
+                },
+            },
+            # ── Scenario 23 ────────────────────────────────────────────────────
+            # Expected: ESCALATE — PEP hard-rule applies regardless of the small
+            # PEN amount or moderate xgboost score
+            {
+                "external_alert_id": "LIVE-PEP-PEN-023",
+                "customer_id": "CUST-PEP-023",
+                "is_pep": True,
+                "amount": "2800.00",        # PEN 2,800 — below SBS threshold, but PEP overrides
+                "currency": "PEN",
+                "transaction_date": now - timedelta(hours=3),
+                "status": Alert.Status.PENDING,
+                "xgboost_score": 0.38,
+                "raw_payload": {
+                    "source": "xgboost_v3",
+                    "alert_type": "PEP_TRANSACTION",
+                    "segment": "retail_individual",
+                    "pep_category": "domestic_official",
+                    "notes": "PEP flag active. Resolución SBS 789-2018 Art. 17 mandates human review for all PEP alerts regardless of amount.",
+                },
+            },
+            # ── Scenario 24 ────────────────────────────────────────────────────
+            # Expected: DISMISS — COP 3.2M is 32% of SARLAFT 10M threshold,
+            # low xgboost, retail individual with clean profile
+            {
+                "external_alert_id": "LIVE-BELOW-COP-024",
+                "customer_id": "CUST-LOW-024",
+                "is_pep": False,
+                "amount": "3200000.00",     # COP 3.2M — ~USD 780, 32% of SARLAFT threshold
+                "currency": "COP",
+                "transaction_date": now - timedelta(days=1),
+                "status": Alert.Status.PENDING,
+                "xgboost_score": 0.27,
+                "raw_payload": {
+                    "source": "xgboost_v3",
+                    "alert_type": "ROUTINE_CHECK",
+                    "segment": "retail_individual",
+                    "notes": "COP 3.2M is well below the SARLAFT COP 10M threshold for natural persons. Consistent with monthly salary deposit pattern.",
+                },
+            },
+            # ── Scenario 25 ────────────────────────────────────────────────────
+            # Expected: REQUEST_INFO — corporate account with MXN activity
+            # inconsistent with its registered business type; borderline xgboost
+            {
+                "external_alert_id": "LIVE-CORP-MED-025",
+                "customer_id": "CUST-CORP-025",
+                "is_pep": False,
+                "amount": "62000.00",       # MXN $62,000 — ~USD 3,647, below CNBV threshold
+                "currency": "MXN",
+                "transaction_date": now - timedelta(hours=16),
+                "status": Alert.Status.PENDING,
+                "xgboost_score": 0.59,
+                "raw_payload": {
+                    "source": "xgboost_v3",
+                    "alert_type": "UNUSUAL_PATTERN",
+                    "segment": "corporate",
+                    "entity_type": "SRL",
+                    "notes": "Corporate SRL registered for software consulting. Receiving cash deposits inconsistent with B2B invoice payments typical for that business type.",
+                },
+            },
+            # ── Scenario 26 ────────────────────────────────────────────────────
+            # Expected: ESCALATE — rapid receipt and re-transfer of USD, high
+            # xgboost, classic pass-through money-mule pattern
+            {
+                "external_alert_id": "LIVE-MULE-026",
+                "customer_id": "CUST-MULE-026",
+                "is_pep": False,
+                "amount": "9600.00",        # USD $9,600 — above CNBV USD 7,500 threshold
+                "currency": "USD",
+                "transaction_date": now - timedelta(hours=6),
+                "status": Alert.Status.PENDING,
+                "xgboost_score": 0.84,
+                "raw_payload": {
+                    "source": "xgboost_v3",
+                    "alert_type": "STRUCTURING_PATTERN",
+                    "segment": "retail_individual",
+                    "notes": "Funds received and re-transferred within 2 hours on three separate occasions. Account balance never exceeds USD 500 between cycles. Strong money-mule / pass-through indicator.",
+                },
+            },
+            # ── Scenario 27 ────────────────────────────────────────────────────
+            # Expected: DISMISS — tiny COP amount, extremely low xgboost, clearly
+            # a low-value routine transaction
+            {
+                "external_alert_id": "LIVE-TINY-COP-027",
+                "customer_id": "CUST-TINY-027",
+                "is_pep": False,
+                "amount": "480000.00",      # COP 480K — ~USD 117, 4.8% of SARLAFT threshold
+                "currency": "COP",
+                "transaction_date": now - timedelta(hours=1),
+                "status": Alert.Status.PENDING,
+                "xgboost_score": 0.11,
+                "raw_payload": {
+                    "source": "xgboost_v3",
+                    "alert_type": "ROUTINE_CHECK",
+                    "segment": "retail_individual",
+                    "notes": "Low-value utility payment. Triggered only by daily count rule. No risk indicators.",
+                },
+            },
+            # ── Scenario 28 ────────────────────────────────────────────────────
+            # Expected: REQUEST_INFO — COP 21.5M is 2.15x the SARLAFT 10M threshold
+            # and does not match the customer's declared annual income; xgboost is
+            # borderline-high — needs income documentation before deciding
+            {
+                "external_alert_id": "LIVE-INCOME-GAP-028",
+                "customer_id": "CUST-GAP-028",
+                "is_pep": False,
+                "amount": "21500000.00",    # COP 21.5M — ~USD 5,244, 2.15x SARLAFT threshold
+                "currency": "COP",
+                "transaction_date": now - timedelta(hours=18),
+                "status": Alert.Status.PENDING,
+                "xgboost_score": 0.67,
+                "raw_payload": {
+                    "source": "xgboost_v3",
+                    "alert_type": "UNUSUAL_AMOUNT",
+                    "segment": "retail_individual",
+                    "notes": "Single deposit of COP 21.5M. Customer's declared annual income is COP 48M (~COP 4M/month). This single deposit represents 5 months of declared income. Income verification documents requested but not yet received.",
                 },
             },
         ]
