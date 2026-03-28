@@ -14,13 +14,6 @@ class VectorStoreRetriever(IRetriever):
         from compliance_agent.models import RegulationDocument
 
         query_embedding = self.embedder.embed_single(query)
-        docs = (
-            RegulationDocument.objects.annotate(
-                distance=CosineDistance("embedding", query_embedding)
-            )
-            .filter(embedding__isnull=False)
-            .order_by("distance")[:top_k]
-        )
         return [
             RegulationChunk(
                 document_ref=doc.document_ref,
@@ -31,5 +24,9 @@ class VectorStoreRetriever(IRetriever):
                 gcs_uri=doc.gcs_uri,
                 score=1.0 - (doc.distance or 0.0),
             )
-            for doc in docs
+            async for doc in RegulationDocument.objects.annotate(
+                distance=CosineDistance("embedding", query_embedding)
+            )
+            .filter(embedding__isnull=False)
+            .order_by("distance")[:top_k]
         ]

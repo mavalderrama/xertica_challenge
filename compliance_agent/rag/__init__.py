@@ -1,5 +1,6 @@
 from .chunking import RegulationChunker
 from .embeddings import HFEmbedder
+from .graph_retriever import GraphRetriever
 from .hybrid_retriever import HybridRetriever
 from .indexer import RegulationIndexer
 from .interfaces import IIndexer, IRetriever, RegulationChunk
@@ -18,4 +19,5 @@ __all__ = [
     "SparseVectorizer",
     "HybridRetriever",
     "RegulationIndexer",
+    "GraphRetriever",
 ]

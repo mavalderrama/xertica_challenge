@@ -4,8 +4,11 @@ from langchain_core.output_parsers import JsonOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 
 from compliance_agent.agents.base import BaseAgent
-from compliance_agent.models import Investigation, RiskAnalysis
-from compliance_agent.repositories.interfaces import IRiskAnalysisRepository
+from compliance_agent.models import RiskAnalysis
+from compliance_agent.repositories.interfaces import (
+    IInvestigationRepository,
+    IRiskAnalysisRepository,
+)
 
 RISK_PROMPT = ChatPromptTemplate.from_messages(
     [
@@ -57,9 +60,11 @@ class RiskAnalyzerAgent(BaseAgent):
         llm: Any,
         tracer: Any,
         risk_analysis_repo: IRiskAnalysisRepository,
+        investigation_repo: IInvestigationRepository,
     ) -> None:
         super().__init__(llm, tracer)
         self.risk_analysis_repo = risk_analysis_repo
+        self.investigation_repo = investigation_repo
 
     async def run(self, state: dict) -> dict:
         investigation_data: dict = state["investigation"]
@@ -80,7 +85,7 @@ class RiskAnalyzerAgent(BaseAgent):
             }
         )
 
-        investigation = Investigation.objects.get(pk=investigation_data["id"])
+        investigation = await self.investigation_repo.get_by_id(investigation_data["id"])
         usage_metadata = getattr(self.llm, "last_token_usage", {})
         token_count = usage_metadata.get("total_tokens", 0)
 
@@ -93,7 +98,7 @@ class RiskAnalyzerAgent(BaseAgent):
             model_used=getattr(self.llm, "model_name", "gemini-2.0-flash"),
             token_count=token_count,
         )
-        risk_analysis = self.risk_analysis_repo.save(risk_analysis)
+        risk_analysis = await self.risk_analysis_repo.save(risk_analysis)
 
         return {
             **state,

@@ -1,4 +1,4 @@
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -21,6 +21,10 @@ def test_decision_types():
 
 @pytest.mark.asyncio
 async def test_pep_hard_rule_skips_llm(mock_llm, mock_tracer):
+    from unittest.mock import patch
+
+    from compliance_agent.agents.decision_agent import DecisionAgent
+
     retriever = MagicMock()
     retriever.retrieve = AsyncMock(return_value=[])
 
@@ -33,15 +37,21 @@ async def test_pep_hard_rule_skips_llm(mock_llm, mock_tracer):
     saved_decision.is_pep_override_applied = True
 
     decision_repo = MagicMock()
-    decision_repo.save.return_value = saved_decision
+    decision_repo.save = AsyncMock(return_value=saved_decision)
 
-    from compliance_agent.agents.decision_agent import DecisionAgent
+    risk_analysis_repo = MagicMock()
+    risk_analysis_repo.get_by_id = AsyncMock(return_value=MagicMock())
+
+    audit_log_repo = MagicMock()
+    audit_log_repo.create = AsyncMock(return_value=MagicMock())
 
     agent = DecisionAgent(
         llm=mock_llm,
         tracer=mock_tracer,
         retriever=retriever,
         decision_repo=decision_repo,
+        risk_analysis_repo=risk_analysis_repo,
+        audit_log_repo=audit_log_repo,
     )
 
     state = {
@@ -58,14 +68,8 @@ async def test_pep_hard_rule_skips_llm(mock_llm, mock_tracer):
         "langfuse_trace_id": "",
     }
 
-    mock_ra = MagicMock()
-
-    with (
-        patch("compliance_agent.agents.decision_agent.RiskAnalysis") as mock_ra_cls,  # noqa: N806
-        patch("compliance_agent.agents.decision_agent.AuditLog"),
-        patch("compliance_agent.agents.decision_agent.Decision") as mock_decision_cls,  # noqa: N806
-    ):
-        mock_ra_cls.objects.get.return_value = mock_ra
+    # Patch Decision to skip Django's FK type validation in the unit test
+    with patch("compliance_agent.agents.decision_agent.Decision") as mock_decision_cls:
         mock_decision_cls.DecisionType.ESCALATE = "ESCALATE"
         mock_decision_instance = MagicMock()
         mock_decision_instance.decision_type = "ESCALATE"
@@ -76,6 +80,9 @@ async def test_pep_hard_rule_skips_llm(mock_llm, mock_tracer):
         result = await agent.run(state)
 
     mock_llm.ainvoke.assert_not_called()
+    retriever.retrieve.assert_not_called()
+    decision_repo.save.assert_called_once()
+    audit_log_repo.create.assert_called_once()
+
     assert result["decision"]["decision_type"] == "ESCALATE"
     assert result["decision"]["is_pep_override_applied"] is True
-    retriever.retrieve.assert_not_called()

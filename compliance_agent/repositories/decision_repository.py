@@ -5,9 +5,9 @@ from compliance_agent.repositories.interfaces import IDecisionRepository
 
 
 class DecisionRepository(IDecisionRepository):
-    def get_by_risk_analysis_id(self, risk_analysis_id: UUID) -> Decision:
-        return Decision.objects.get(risk_analysis_id=risk_analysis_id)
+    async def get_by_risk_analysis_id(self, risk_analysis_id: UUID) -> Decision:
+        return await Decision.objects.aget(risk_analysis_id=risk_analysis_id)
 
-    def save(self, decision: Decision) -> Decision:
-        decision.save()
+    async def save(self, decision: Decision) -> Decision:
+        await decision.asave()
         return decision

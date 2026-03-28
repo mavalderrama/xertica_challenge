@@ -4,9 +4,13 @@ from langchain_core.output_parsers import JsonOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 
 from compliance_agent.agents.base import BaseAgent
-from compliance_agent.models import AuditLog, Decision, RiskAnalysis
+from compliance_agent.models import Decision
 from compliance_agent.rag.interfaces import IRetriever
-from compliance_agent.repositories.interfaces import IDecisionRepository
+from compliance_agent.repositories.interfaces import (
+    IAuditLogRepository,
+    IDecisionRepository,
+    IRiskAnalysisRepository,
+)
 
 DECISION_PROMPT = ChatPromptTemplate.from_messages(
     [
@@ -68,17 +72,21 @@ class DecisionAgent(BaseAgent):
         tracer: Any,
         retriever: IRetriever,
         decision_repo: IDecisionRepository,
+        risk_analysis_repo: IRiskAnalysisRepository,
+        audit_log_repo: IAuditLogRepository,
     ) -> None:
         super().__init__(llm, tracer)
         self.retriever = retriever
         self.decision_repo = decision_repo
+        self.risk_analysis_repo = risk_analysis_repo
+        self.audit_log_repo = audit_log_repo
 
     async def run(self, state: dict) -> dict:
         alert_data: dict = state["alert_data"]
         risk_data: dict = state["risk_analysis"]
         is_pep: bool = alert_data.get("is_pep", False)
 
-        risk_analysis = RiskAnalysis.objects.get(pk=risk_data["id"])
+        risk_analysis = await self.risk_analysis_repo.get_by_id(risk_data["id"])
 
         # PEP hard-rule: deterministic escalation, no LLM needed
         if is_pep:
@@ -109,8 +117,8 @@ class DecisionAgent(BaseAgent):
                 step_by_step_reasoning=PEP_ESCALATION_REASON,
                 is_pep_override_applied=True,
             )
-            decision = self.decision_repo.save(decision)
-            self._write_audit_log(state, decision, is_pep_override=True)
+            decision = await self.decision_repo.save(decision)
+            await self._write_audit_log(state, decision, is_pep_override=True)
             return self._build_output(state, decision)
 
         # RAG retrieval for non-PEP decisions
@@ -143,14 +151,14 @@ class DecisionAgent(BaseAgent):
             step_by_step_reasoning=result["step_by_step_reasoning"],
             is_pep_override_applied=False,
         )
-        decision = self.decision_repo.save(decision)
-        self._write_audit_log(state, decision, is_pep_override=False)
+        decision = await self.decision_repo.save(decision)
+        await self._write_audit_log(state, decision, is_pep_override=False)
         return self._build_output(state, decision)
 
-    def _write_audit_log(
+    async def _write_audit_log(
         self, state: dict, decision: Decision, is_pep_override: bool
     ) -> None:
-        AuditLog.objects.create(
+        await self.audit_log_repo.create(
             alert_id=state["alert_id"],
             event_type="DECISION",
             agent_name="DecisionAgent",

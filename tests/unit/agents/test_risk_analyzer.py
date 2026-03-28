@@ -1,16 +1,23 @@
+from unittest.mock import MagicMock
+
 import pytest
 
 
 @pytest.mark.asyncio
 async def test_risk_analyzer_creates_agent_without_error(mock_llm, mock_tracer):
-    from unittest.mock import MagicMock
-
     from compliance_agent.agents.risk_analyzer import RiskAnalyzerAgent
 
-    repo = MagicMock()
-    agent = RiskAnalyzerAgent(llm=mock_llm, tracer=mock_tracer, risk_analysis_repo=repo)
+    risk_repo = MagicMock()
+    investigation_repo = MagicMock()
+    agent = RiskAnalyzerAgent(
+        llm=mock_llm,
+        tracer=mock_tracer,
+        risk_analysis_repo=risk_repo,
+        investigation_repo=investigation_repo,
+    )
     assert agent.llm is mock_llm
-    assert agent.risk_analysis_repo is repo
+    assert agent.risk_analysis_repo is risk_repo
+    assert agent.investigation_repo is investigation_repo
 
 
 @pytest.mark.asyncio

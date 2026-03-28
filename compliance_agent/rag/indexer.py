@@ -48,7 +48,7 @@ class RegulationIndexer(IIndexer):
             if sparse_embeddings is not None:
                 defaults["sparse_embedding"] = sparse_embeddings[i]
 
-            _, was_created = RegulationDocument.objects.update_or_create(
+            _, was_created = await RegulationDocument.objects.aupdate_or_create(
                 document_ref=document_ref,
                 chunk_index=chunk.chunk_index,
                 defaults=defaults,
@@ -56,6 +56,32 @@ class RegulationIndexer(IIndexer):
             if was_created:
                 created += 1
         return created
+
+    async def link_related_articles(self) -> int:
+        """
+        Parse cross-references between regulation chunks and create M2M relationships.
+        Scans each chunk's content for "Artículo N" / "Art. N" patterns and links
+        to matching articles within the same regulatory source.
+        Returns the number of relationships created.
+        """
+        import re
+
+        from compliance_agent.models import RegulationDocument
+
+        pattern = re.compile(r"Art(?:ículo|iculo|\.)\s*(\d+)", re.IGNORECASE)
+        links_created = 0
+
+        async for doc in RegulationDocument.objects.all():
+            refs = pattern.findall(doc.content)
+            for ref_num in set(refs):
+                async for related in RegulationDocument.objects.filter(
+                    article_number=ref_num,
+                    source=doc.source,
+                ).exclude(pk=doc.pk):
+                    await doc.related_articles.aadd(related)
+                    links_created += 1
+
+        return links_created
 
     async def bulk_index(
         self,
@@ -97,7 +123,7 @@ class RegulationIndexer(IIndexer):
             if sparse_embeddings is not None:
                 defaults["sparse_embedding"] = sparse_embeddings[i]
 
-            _, was_created = RegulationDocument.objects.update_or_create(
+            _, was_created = await RegulationDocument.objects.aupdate_or_create(
                 document_ref=document_ref,
                 chunk_index=chunk.chunk_index,
                 defaults=defaults,

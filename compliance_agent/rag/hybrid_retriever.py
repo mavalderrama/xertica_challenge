@@ -7,7 +7,12 @@ where k=60 (empirically robust constant) and rank_i is the rank in retriever i.
 Combines:
 1. Dense (vector) retrieval — semantic similarity via pgvector cosine (all-MiniLM-L6-v2, 384-dim)
 2. Sparse retrieval — TF-IDF inner product via pgvector sparsevec (30k-dim)
+3. Graph retrieval (optional) — 1-hop M2M expansion for multi-article regulatory reasoning
 """
+
+from __future__ import annotations
+
+import asyncio
 
 from compliance_agent.rag.interfaces import IRetriever, RegulationChunk
 
@@ -19,20 +24,23 @@ class HybridRetriever(IRetriever):
         self,
         vector_retriever: IRetriever,
         sparse_retriever: IRetriever,
+        graph_retriever: IRetriever | None = None,
         rrf_k: int = RRF_K,
     ) -> None:
         self.vector_retriever = vector_retriever
         self.sparse_retriever = sparse_retriever
+        self.graph_retriever = graph_retriever
         self.rrf_k = rrf_k
 
     async def retrieve(self, query: str, top_k: int = 5) -> list[RegulationChunk]:
         fetch_k = top_k * 3
 
-        import asyncio
+        retrievers = [self.vector_retriever, self.sparse_retriever]
+        if self.graph_retriever is not None:
+            retrievers.append(self.graph_retriever)
 
         all_results = await asyncio.gather(
-            self.vector_retriever.retrieve(query, fetch_k),
-            self.sparse_retriever.retrieve(query, fetch_k),
+            *[r.retrieve(query, fetch_k) for r in retrievers]
         )
 
         rrf_scores: dict[str, float] = {}

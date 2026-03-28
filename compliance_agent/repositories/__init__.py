@@ -9,6 +9,7 @@ from .interfaces import (
     IRiskAnalysisRepository,
 )
 from .investigation_repository import InvestigationRepository
+from .risk_analysis_repository import RiskAnalysisRepository
 
 __all__ = [
     "IAlertRepository",
@@ -20,4 +21,5 @@ __all__ = [
     "InvestigationRepository",
     "DecisionRepository",
     "AuditLogRepository",
+    "RiskAnalysisRepository",
 ]

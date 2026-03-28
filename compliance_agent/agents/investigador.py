@@ -3,8 +3,11 @@ import time
 from typing import Any
 
 from compliance_agent.agents.base import BaseAgent
-from compliance_agent.models import Alert, Investigation
-from compliance_agent.repositories.interfaces import IInvestigationRepository
+from compliance_agent.models import Investigation
+from compliance_agent.repositories.interfaces import (
+    IAlertRepository,
+    IInvestigationRepository,
+)
 from compliance_agent.tools.base import BigQueryToolInterface, GCSToolInterface
 
 
@@ -21,11 +24,13 @@ class InvestigadorAgent(BaseAgent):
         bq_tool: BigQueryToolInterface,
         gcs_tool: GCSToolInterface,
         investigation_repo: IInvestigationRepository,
+        alert_repo: IAlertRepository,
     ) -> None:
         super().__init__(llm, tracer)
         self.bq_tool = bq_tool
         self.gcs_tool = gcs_tool
         self.investigation_repo = investigation_repo
+        self.alert_repo = alert_repo
 
     async def run(self, state: dict) -> dict:
         alert_data: dict = state["alert_data"]
@@ -64,7 +69,7 @@ class InvestigadorAgent(BaseAgent):
 
         duration = time.monotonic() - start
 
-        alert = Alert.objects.get(pk=alert_id)
+        alert = await self.alert_repo.get_by_id(alert_id)
         investigation = Investigation(
             alert=alert,
             transaction_history=tx_history,
@@ -72,6 +77,6 @@ class InvestigadorAgent(BaseAgent):
             structured_context=structured_context,
             duration_seconds=round(duration, 3),
         )
-        investigation = self.investigation_repo.save(investigation)
+        investigation = await self.investigation_repo.save(investigation)
 
         return {**state, "investigation": {"id": str(investigation.id), **structured_context}}

@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -20,31 +20,34 @@ def _make_state(customer_id: str = "CUST-001", is_pep: bool = False) -> dict:
     }
 
 
-@pytest.mark.asyncio
-async def test_investigador_returns_structured_context(
-    mock_llm, mock_bq_tool, mock_gcs_tool, mock_tracer
-):
-    repo = MagicMock()
+def _make_agent(mock_llm, mock_tracer, mock_bq_tool, mock_gcs_tool):
     investigation_mock = MagicMock()
     investigation_mock.id = "test-inv-id"
-    repo.save.return_value = investigation_mock
+
+    investigation_repo = MagicMock()
+    investigation_repo.save = AsyncMock(return_value=investigation_mock)
+
+    alert_repo = MagicMock()
+    alert_repo.get_by_id = AsyncMock(return_value=MagicMock())
 
     agent = InvestigadorAgent(
         llm=mock_llm,
         tracer=mock_tracer,
         bq_tool=mock_bq_tool,
         gcs_tool=mock_gcs_tool,
-        investigation_repo=repo,
+        investigation_repo=investigation_repo,
+        alert_repo=alert_repo,
     )
+    return agent, alert_repo, investigation_repo
 
-    with (
-        patch("compliance_agent.agents.investigador.Alert") as mock_alert_cls,  # noqa: N806
-        patch("compliance_agent.agents.investigador.Investigation") as mock_inv_cls,  # noqa: N806
-    ):
-        mock_alert_cls.objects.get.return_value = MagicMock()
-        mock_inv_instance = MagicMock()
-        mock_inv_cls.return_value = mock_inv_instance
 
+@pytest.mark.asyncio
+async def test_investigador_returns_structured_context(
+    mock_llm, mock_bq_tool, mock_gcs_tool, mock_tracer
+):
+    agent, _, _ = _make_agent(mock_llm, mock_tracer, mock_bq_tool, mock_gcs_tool)
+
+    with patch("compliance_agent.agents.investigador.Investigation"):
         result = await agent.run(_make_state())
 
     assert "investigation" in result
@@ -56,22 +59,13 @@ async def test_investigador_returns_structured_context(
 async def test_investigador_fetches_bq_and_gcs_concurrently(
     mock_llm, mock_bq_tool, mock_gcs_tool, mock_tracer
 ):
-    repo = MagicMock()
-    repo.save.return_value = MagicMock(id="inv-id")
-
-    agent = InvestigadorAgent(
-        llm=mock_llm,
-        tracer=mock_tracer,
-        bq_tool=mock_bq_tool,
-        gcs_tool=mock_gcs_tool,
-        investigation_repo=repo,
+    agent, alert_repo, investigation_repo = _make_agent(
+        mock_llm, mock_tracer, mock_bq_tool, mock_gcs_tool
     )
 
-    with (
-        patch("compliance_agent.agents.investigador.Alert") as mock_alert_cls,  # noqa: N806
-        patch("compliance_agent.agents.investigador.Investigation"),
-    ):
-        mock_alert_cls.objects.get.return_value = MagicMock()
+    with patch("compliance_agent.agents.investigador.Investigation"):
         result = await agent.run(_make_state())
 
     assert result["investigation"]["documents_count"] >= 0
+    alert_repo.get_by_id.assert_called_once()
+    investigation_repo.save.assert_called_once()

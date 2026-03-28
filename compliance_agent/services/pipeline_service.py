@@ -18,7 +18,7 @@ class PipelineService:
     ) -> PipelineState:
         from compliance_agent.models import Alert
 
-        alert = self.alert_repo.get_by_id(alert_id)
+        alert = await self.alert_repo.get_by_id(alert_id)
         alert_data = {
             "customer_id": alert.customer_id,
             "is_pep": alert.is_pep,
@@ -36,15 +36,15 @@ class PipelineService:
             "langfuse_trace_id": langfuse_trace_id,
         }
 
-        self.alert_repo.update_status(alert.id, Alert.Status.INVESTIGATING)
+        await self.alert_repo.update_status(alert.id, Alert.Status.INVESTIGATING)
         final_state = await self.compiled_graph.ainvoke(initial_state)
 
         decision_type = final_state.get("decision", {}).get("decision_type", "")
         if decision_type == "ESCALATE":
-            self.alert_repo.update_status(alert.id, Alert.Status.ESCALATED)
+            await self.alert_repo.update_status(alert.id, Alert.Status.ESCALATED)
         elif decision_type == "DISMISS":
-            self.alert_repo.update_status(alert.id, Alert.Status.DISMISSED)
+            await self.alert_repo.update_status(alert.id, Alert.Status.DISMISSED)
         elif decision_type == "REQUEST_INFO":
-            self.alert_repo.update_status(alert.id, Alert.Status.AWAITING_INFO)
+            await self.alert_repo.update_status(alert.id, Alert.Status.AWAITING_INFO)
 
         return final_state

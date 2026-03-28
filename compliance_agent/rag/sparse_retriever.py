@@ -14,11 +14,6 @@ class SparseVectorRetriever(IRetriever):
         from compliance_agent.models import RegulationDocument
 
         query_vec = self.vectorizer.transform(query)
-        docs = (
-            RegulationDocument.objects.filter(sparse_embedding__isnull=False)
-            .annotate(similarity=MaxInnerProduct("sparse_embedding", query_vec))
-            .order_by("-similarity")[:top_k]
-        )
         return [
             RegulationChunk(
                 document_ref=doc.document_ref,
@@ -29,5 +24,9 @@ class SparseVectorRetriever(IRetriever):
                 gcs_uri=doc.gcs_uri,
                 score=float(doc.similarity),
             )
-            for doc in docs
+            async for doc in RegulationDocument.objects.filter(
+                sparse_embedding__isnull=False
+            )
+            .annotate(similarity=MaxInnerProduct("sparse_embedding", query_vec))
+            .order_by("-similarity")[:top_k]
         ]

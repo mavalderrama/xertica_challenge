@@ -8,7 +8,7 @@ class AuditService:
     def __init__(self, audit_log_repo: IAuditLogRepository) -> None:
         self.audit_log_repo = audit_log_repo
 
-    def log_agent_event(
+    async def log_agent_event(
         self,
         alert_id: str,
         event_type: str,
@@ -19,7 +19,7 @@ class AuditService:
         duration_ms: int = 0,
         token_cost_usd: float = 0.0,
     ) -> Any:
-        return self.audit_log_repo.create(
+        return await self.audit_log_repo.create(
             alert_id=alert_id,
             event_type=event_type,
             agent_name=agent_name,
@@ -30,5 +30,5 @@ class AuditService:
             token_cost_usd=Decimal(str(token_cost_usd)),
         )
 
-    def get_audit_trail(self, alert_id: str) -> list[Any]:
-        return self.audit_log_repo.get_by_alert_id(alert_id)
+    async def get_audit_trail(self, alert_id: str) -> list[Any]:
+        return await self.audit_log_repo.get_by_alert_id(alert_id)

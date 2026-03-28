@@ -73,7 +73,7 @@ def test_regulation_document_has_sparse_embedding():
 
     field_names = {f.name for f in RegulationDocument._meta.get_fields()}
     assert "sparse_embedding" in field_names
-    assert "related_articles" not in field_names
+    assert "related_articles" in field_names
 
 
 def test_regulation_document_embedding_dimensions():

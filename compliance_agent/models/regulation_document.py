@@ -20,6 +20,12 @@ class RegulationDocument(models.Model):
     chunk_index = models.IntegerField(default=0)
     gcs_uri = models.CharField(max_length=500, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    related_articles = models.ManyToManyField(
+        "self",
+        symmetrical=False,
+        blank=True,
+        related_name="referenced_by",
+    )
 
     class Meta:
         app_label = "compliance_agent"

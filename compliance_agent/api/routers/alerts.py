@@ -48,7 +48,7 @@ async def get_alert_status(
     alert_repo: IAlertRepository = Depends(get_alert_repo),
 ) -> AlertStatusResponse:
     try:
-        alert = alert_repo.get_by_id(alert_id)
+        alert = await alert_repo.get_by_id(alert_id)
     except Exception as exc:
         raise HTTPException(status_code=404, detail="Alert not found") from exc
 
@@ -69,7 +69,7 @@ async def get_audit_trail(
     alert_id: str,
     audit_service: AuditService = Depends(get_audit_service),
 ) -> AuditTrailResponse:
-    events = audit_service.get_audit_trail(alert_id)
+    events = await audit_service.get_audit_trail(alert_id)
     return AuditTrailResponse(
         alert_id=alert_id,
         events=[

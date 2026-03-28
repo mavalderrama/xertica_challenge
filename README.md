@@ -43,6 +43,7 @@ Hybrid retrieval combining two sources via **Reciprocal Rank Fusion (RRF)**:
 |-----------|--------|----------|
 | Dense | pgvector cosine (all-MiniLM-L6-v2, 384-dim) | Semantic recall |
 | Sparse | pgvector inner product (TF-IDF sparsevec, 30k-dim) | Exact term precision |
+| Graph retrieval | Django M2M traversal (1-hop) of `related_articles` | Expands results for multi-article regulatory reasoning |
 
 **RRF Formula:**
 

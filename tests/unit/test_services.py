@@ -1,16 +1,19 @@
 from decimal import Decimal
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
+
+import pytest
 
 
-def test_audit_service_log_event():
+@pytest.mark.asyncio
+async def test_audit_service_log_event():
     from compliance_agent.services.audit_service import AuditService
 
     repo = MagicMock()
     mock_log = MagicMock()
-    repo.create.return_value = mock_log
+    repo.create = AsyncMock(return_value=mock_log)
 
     service = AuditService(audit_log_repo=repo)
-    service.log_agent_event(
+    await service.log_agent_event(
         alert_id="alert-1",
         event_type="INVESTIGATION",
         agent_name="InvestigadorAgent",
@@ -30,25 +33,28 @@ def test_audit_service_log_event():
     assert call_kwargs["token_cost_usd"] == Decimal("0.001")
 
 
-def test_audit_service_get_trail():
+@pytest.mark.asyncio
+async def test_audit_service_get_trail():
     from compliance_agent.services.audit_service import AuditService
 
     repo = MagicMock()
-    repo.get_by_alert_id.return_value = [MagicMock(), MagicMock()]
+    repo.get_by_alert_id = AsyncMock(return_value=[MagicMock(), MagicMock()])
 
     service = AuditService(audit_log_repo=repo)
-    events = service.get_audit_trail("alert-1")
+    events = await service.get_audit_trail("alert-1")
 
     assert len(events) == 2
     repo.get_by_alert_id.assert_called_once_with("alert-1")
 
 
-def test_audit_service_zero_cost():
+@pytest.mark.asyncio
+async def test_audit_service_zero_cost():
     from compliance_agent.services.audit_service import AuditService
 
     repo = MagicMock()
+    repo.create = AsyncMock(return_value=MagicMock())
     service = AuditService(audit_log_repo=repo)
-    service.log_agent_event(
+    await service.log_agent_event(
         alert_id="a",
         event_type="TEST",
         agent_name="test",

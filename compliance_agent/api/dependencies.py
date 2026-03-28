@@ -76,16 +76,7 @@ def get_audit_log_repo():
 
 @lru_cache
 def get_risk_analysis_repo():
-    from compliance_agent.models import RiskAnalysis
-    from compliance_agent.repositories.interfaces import IRiskAnalysisRepository
-
-    class RiskAnalysisRepository(IRiskAnalysisRepository):
-        def get_by_investigation_id(self, investigation_id):
-            return RiskAnalysis.objects.get(investigation_id=investigation_id)
-
-        def save(self, risk_analysis):
-            risk_analysis.save()
-            return risk_analysis
+    from compliance_agent.repositories import RiskAnalysisRepository
 
     return RiskAnalysisRepository()
 
@@ -93,6 +84,7 @@ def get_risk_analysis_repo():
 @lru_cache
 def get_retriever():
     from compliance_agent.rag import (
+        GraphRetriever,
         HFEmbedder,
         HybridRetriever,
         SparseVectorizer,
@@ -105,6 +97,7 @@ def get_retriever():
     return HybridRetriever(
         vector_retriever=VectorStoreRetriever(embedder),
         sparse_retriever=SparseVectorRetriever(vectorizer),
+        graph_retriever=GraphRetriever(embedder),
     )
 
 
@@ -129,17 +122,21 @@ def get_pipeline_service():
         bq_tool=get_bq_tool(),
         gcs_tool=get_gcs_tool(),
         investigation_repo=get_investigation_repo(),
+        alert_repo=get_alert_repo(),
     )
     risk_analyzer = RiskAnalyzerAgent(
         llm=get_llm(),
         tracer=get_tracer(),
         risk_analysis_repo=get_risk_analysis_repo(),
+        investigation_repo=get_investigation_repo(),
     )
     decision_agent = DecisionAgent(
         llm=get_llm(),
         tracer=get_tracer(),
         retriever=get_retriever(),
         decision_repo=get_decision_repo(),
+        risk_analysis_repo=get_risk_analysis_repo(),
+        audit_log_repo=get_audit_log_repo(),
     )
     compiled = build_compliance_pipeline(investigador, risk_analyzer, decision_agent)
     return PipelineService(compiled_graph=compiled, alert_repo=get_alert_repo())

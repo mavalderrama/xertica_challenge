@@ -1,61 +1,80 @@
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import TYPE_CHECKING
 from uuid import UUID
+
+if TYPE_CHECKING:
+    from compliance_agent.models import (
+        Alert,
+        AuditLog,
+        Decision,
+        Investigation,
+        RiskAnalysis,
+    )
 
 
 class IAlertRepository(ABC):
     @abstractmethod
-    def get_by_id(self, alert_id: UUID) -> Any:
+    async def get_by_id(self, alert_id: UUID) -> Alert:
         pass
 
     @abstractmethod
-    def get_by_external_id(self, external_id: str) -> Any:
+    async def get_by_external_id(self, external_id: str) -> Alert:
         pass
 
     @abstractmethod
-    def save(self, alert: Any) -> Any:
+    async def save(self, alert: Alert) -> Alert:
         pass
 
     @abstractmethod
-    def update_status(self, alert_id: UUID, status: str) -> Any:
+    async def update_status(self, alert_id: UUID, status: str) -> Alert:
         pass
 
 
 class IInvestigationRepository(ABC):
     @abstractmethod
-    def get_by_alert_id(self, alert_id: UUID) -> Any:
+    async def get_by_alert_id(self, alert_id: UUID) -> Investigation:
         pass
 
     @abstractmethod
-    def save(self, investigation: Any) -> Any:
+    async def get_by_id(self, investigation_id: UUID) -> Investigation:
+        pass
+
+    @abstractmethod
+    async def save(self, investigation: Investigation) -> Investigation:
         pass
 
 
 class IRiskAnalysisRepository(ABC):
     @abstractmethod
-    def get_by_investigation_id(self, investigation_id: UUID) -> Any:
+    async def get_by_investigation_id(self, investigation_id: UUID) -> RiskAnalysis:
         pass
 
     @abstractmethod
-    def save(self, risk_analysis: Any) -> Any:
+    async def get_by_id(self, id: UUID) -> RiskAnalysis:
+        pass
+
+    @abstractmethod
+    async def save(self, risk_analysis: RiskAnalysis) -> RiskAnalysis:
         pass
 
 
 class IDecisionRepository(ABC):
     @abstractmethod
-    def get_by_risk_analysis_id(self, risk_analysis_id: UUID) -> Any:
+    async def get_by_risk_analysis_id(self, risk_analysis_id: UUID) -> Decision:
         pass
 
     @abstractmethod
-    def save(self, decision: Any) -> Any:
+    async def save(self, decision: Decision) -> Decision:
         pass
 
 
 class IAuditLogRepository(ABC):
     @abstractmethod
-    def create(self, **kwargs: Any) -> Any:
+    async def create(self, **kwargs) -> AuditLog:
         pass
 
     @abstractmethod
-    def get_by_alert_id(self, alert_id: UUID) -> list[Any]:
+    async def get_by_alert_id(self, alert_id: UUID) -> list[AuditLog]:
         pass
