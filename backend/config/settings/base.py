@@ -4,7 +4,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "insecure-dev-key-change-in-production")
+SECRET_KEY = os.environ.get(
+    "DJANGO_SECRET_KEY", "insecure-dev-key-change-in-production"
+)
 
 INSTALLED_APPS = [
     "django.contrib.contenttypes",

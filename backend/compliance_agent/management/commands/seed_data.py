@@ -116,7 +116,7 @@ class Command(BaseCommand):
                 "external_alert_id": "LIVE-LOW-RISK-001",
                 "customer_id": "CUST-LOW-001",
                 "is_pep": False,
-                "amount": "3500000.00",     # 3.5M COP — below the 10M threshold
+                "amount": "3500000.00",  # 3.5M COP — below the 10M threshold
                 "currency": "COP",
                 "transaction_date": now - timedelta(hours=2),
                 "status": Alert.Status.PENDING,
@@ -136,7 +136,7 @@ class Command(BaseCommand):
                 "external_alert_id": "LIVE-HIGH-RISK-002",
                 "customer_id": "CUST-HIGH-002",
                 "is_pep": False,
-                "amount": "85000.00",       # $85,000 USD — well above reporting thresholds
+                "amount": "85000.00",  # $85,000 USD — well above reporting thresholds
                 "currency": "USD",
                 "transaction_date": now - timedelta(hours=6),
                 "status": Alert.Status.PENDING,
@@ -155,7 +155,7 @@ class Command(BaseCommand):
                 "external_alert_id": "LIVE-PEP-SMALL-003",
                 "customer_id": "CUST-PEP-003",
                 "is_pep": True,
-                "amount": "12000.00",       # $12,000 MXN — moderate amount
+                "amount": "12000.00",  # $12,000 MXN — moderate amount
                 "currency": "MXN",
                 "transaction_date": now - timedelta(hours=1),
                 "status": Alert.Status.PENDING,
@@ -174,7 +174,7 @@ class Command(BaseCommand):
                 "external_alert_id": "LIVE-PEP-LARGE-004",
                 "customer_id": "CUST-PEP-004",
                 "is_pep": True,
-                "amount": "750000.00",      # $750,000 USD
+                "amount": "750000.00",  # $750,000 USD
                 "currency": "USD",
                 "transaction_date": now - timedelta(days=1),
                 "status": Alert.Status.PENDING,
@@ -194,7 +194,7 @@ class Command(BaseCommand):
                 "external_alert_id": "LIVE-MID-RISK-005",
                 "customer_id": "CUST-MID-005",
                 "is_pep": False,
-                "amount": "18500.00",       # S/18,500 PEN — above threshold but not extreme
+                "amount": "18500.00",  # S/18,500 PEN — above threshold but not extreme
                 "currency": "PEN",
                 "transaction_date": now - timedelta(hours=12),
                 "status": Alert.Status.PENDING,
@@ -214,7 +214,7 @@ class Command(BaseCommand):
                 "external_alert_id": "LIVE-MULTI-CCY-006",
                 "customer_id": "CUST-MULTI-006",
                 "is_pep": False,
-                "amount": "45000.00",       # $45,000 USD equivalent
+                "amount": "45000.00",  # $45,000 USD equivalent
                 "currency": "USD",
                 "transaction_date": now - timedelta(hours=8),
                 "status": Alert.Status.PENDING,
@@ -233,7 +233,7 @@ class Command(BaseCommand):
                 "external_alert_id": "LIVE-CORP-007",
                 "customer_id": "CUST-CORP-007",
                 "is_pep": False,
-                "amount": "48000000.00",    # 48M COP — well above 10M threshold
+                "amount": "48000000.00",  # 48M COP — well above 10M threshold
                 "currency": "COP",
                 "transaction_date": now - timedelta(hours=3),
                 "status": Alert.Status.PENDING,
@@ -253,7 +253,7 @@ class Command(BaseCommand):
                 "external_alert_id": "LIVE-SAFE-008",
                 "customer_id": "CUST-SAFE-008",
                 "is_pep": False,
-                "amount": "8500.00",        # MXN $8,500 — below MXN 127K CNBV threshold
+                "amount": "8500.00",  # MXN $8,500 — below MXN 127K CNBV threshold
                 "currency": "MXN",
                 "transaction_date": now - timedelta(days=2),
                 "status": Alert.Status.PENDING,
@@ -272,7 +272,7 @@ class Command(BaseCommand):
                 "external_alert_id": "LIVE-STRUCT-009",
                 "customer_id": "CUST-STRUCT-009",
                 "is_pep": False,
-                "amount": "9800000.00",     # COP 9.8M — 98% of SARLAFT 10M threshold
+                "amount": "9800000.00",  # COP 9.8M — 98% of SARLAFT 10M threshold
                 "currency": "COP",
                 "transaction_date": now - timedelta(hours=5),
                 "status": Alert.Status.PENDING,
@@ -291,7 +291,7 @@ class Command(BaseCommand):
                 "external_alert_id": "LIVE-NEW-ACCT-010",
                 "customer_id": "CUST-NEW-010",
                 "is_pep": False,
-                "amount": "18500.00",       # USD $18,500 — well above CNBV USD 7,500
+                "amount": "18500.00",  # USD $18,500 — well above CNBV USD 7,500
                 "currency": "USD",
                 "transaction_date": now - timedelta(hours=10),
                 "status": Alert.Status.PENDING,
@@ -309,7 +309,7 @@ class Command(BaseCommand):
                 "external_alert_id": "LIVE-MICRO-011",
                 "customer_id": "CUST-MICRO-011",
                 "is_pep": False,
-                "amount": "320.00",         # USD $320 — trivial amount
+                "amount": "320.00",  # USD $320 — trivial amount
                 "currency": "USD",
                 "transaction_date": now - timedelta(hours=1),
                 "status": Alert.Status.PENDING,
@@ -327,7 +327,7 @@ class Command(BaseCommand):
                 "external_alert_id": "LIVE-PEP-CORP-012",
                 "customer_id": "CUST-PEP-012",
                 "is_pep": True,
-                "amount": "92000.00",       # USD $92,000
+                "amount": "92000.00",  # USD $92,000
                 "currency": "USD",
                 "transaction_date": now - timedelta(hours=4),
                 "status": Alert.Status.PENDING,
@@ -348,7 +348,7 @@ class Command(BaseCommand):
                 "external_alert_id": "LIVE-HIGH-PEN-013",
                 "customer_id": "CUST-PEN-013",
                 "is_pep": False,
-                "amount": "43000.00",       # PEN 43,000 — 4.3x SBS threshold (~USD 11.6K)
+                "amount": "43000.00",  # PEN 43,000 — 4.3x SBS threshold (~USD 11.6K)
                 "currency": "PEN",
                 "transaction_date": now - timedelta(hours=7),
                 "status": Alert.Status.PENDING,
@@ -367,7 +367,7 @@ class Command(BaseCommand):
                 "external_alert_id": "LIVE-SAFE-PEN-014",
                 "customer_id": "CUST-SAFE-014",
                 "is_pep": False,
-                "amount": "3800.00",        # PEN 3,800 — 38% of SBS 10K threshold (~USD 1,027)
+                "amount": "3800.00",  # PEN 3,800 — 38% of SBS 10K threshold (~USD 1,027)
                 "currency": "PEN",
                 "transaction_date": now - timedelta(days=1),
                 "status": Alert.Status.PENDING,
@@ -386,7 +386,7 @@ class Command(BaseCommand):
                 "external_alert_id": "LIVE-UNDER-THRESH-015",
                 "customer_id": "CUST-STRUCT-015",
                 "is_pep": False,
-                "amount": "7300.00",        # USD $7,300 — 97% of CNBV USD 7,500 threshold
+                "amount": "7300.00",  # USD $7,300 — 97% of CNBV USD 7,500 threshold
                 "currency": "USD",
                 "transaction_date": now - timedelta(hours=3),
                 "status": Alert.Status.PENDING,
@@ -405,7 +405,7 @@ class Command(BaseCommand):
                 "external_alert_id": "LIVE-INTL-WIRE-016",
                 "customer_id": "CUST-WIRE-016",
                 "is_pep": False,
-                "amount": "34000.00",       # USD $34,000
+                "amount": "34000.00",  # USD $34,000
                 "currency": "USD",
                 "transaction_date": now - timedelta(hours=9),
                 "status": Alert.Status.PENDING,
@@ -424,7 +424,7 @@ class Command(BaseCommand):
                 "external_alert_id": "LIVE-SME-LOW-017",
                 "customer_id": "CUST-SME-017",
                 "is_pep": False,
-                "amount": "9200.00",        # MXN $9,200 — 7.2% of CNBV threshold (~USD 541)
+                "amount": "9200.00",  # MXN $9,200 — 7.2% of CNBV threshold (~USD 541)
                 "currency": "MXN",
                 "transaction_date": now - timedelta(hours=6),
                 "status": Alert.Status.PENDING,
@@ -443,7 +443,7 @@ class Command(BaseCommand):
                 "external_alert_id": "LIVE-ID-CHANGE-018",
                 "customer_id": "CUST-IDCHG-018",
                 "is_pep": False,
-                "amount": "13500.00",       # PEN 13,500 — 1.35x SBS threshold (~USD 3,649)
+                "amount": "13500.00",  # PEN 13,500 — 1.35x SBS threshold (~USD 3,649)
                 "currency": "PEN",
                 "transaction_date": now - timedelta(hours=14),
                 "status": Alert.Status.PENDING,
@@ -462,7 +462,7 @@ class Command(BaseCommand):
                 "external_alert_id": "LIVE-LARGE-MXN-019",
                 "customer_id": "CUST-MXN-019",
                 "is_pep": False,
-                "amount": "195000.00",      # MXN $195,000 — ~USD 11,470, 1.5x CNBV threshold
+                "amount": "195000.00",  # MXN $195,000 — ~USD 11,470, 1.5x CNBV threshold
                 "currency": "MXN",
                 "transaction_date": now - timedelta(hours=11),
                 "status": Alert.Status.PENDING,
@@ -481,7 +481,7 @@ class Command(BaseCommand):
                 "external_alert_id": "LIVE-REMITTANCE-020",
                 "customer_id": "CUST-REM-020",
                 "is_pep": False,
-                "amount": "280.00",         # USD $280 — routine remittance
+                "amount": "280.00",  # USD $280 — routine remittance
                 "currency": "USD",
                 "transaction_date": now - timedelta(hours=2),
                 "status": Alert.Status.PENDING,
@@ -500,7 +500,7 @@ class Command(BaseCommand):
                 "external_alert_id": "LIVE-ODD-TIMING-021",
                 "customer_id": "CUST-NIGHT-021",
                 "is_pep": False,
-                "amount": "16000.00",       # PEN 16,000 — 1.6x SBS threshold (~USD 4,324)
+                "amount": "16000.00",  # PEN 16,000 — 1.6x SBS threshold (~USD 4,324)
                 "currency": "PEN",
                 "transaction_date": now - timedelta(hours=20),
                 "status": Alert.Status.PENDING,
@@ -519,7 +519,7 @@ class Command(BaseCommand):
                 "external_alert_id": "LIVE-LARGE-USD-022",
                 "customer_id": "CUST-LARGE-022",
                 "is_pep": False,
-                "amount": "67000.00",       # USD $67,000
+                "amount": "67000.00",  # USD $67,000
                 "currency": "USD",
                 "transaction_date": now - timedelta(hours=8),
                 "status": Alert.Status.PENDING,
@@ -538,7 +538,7 @@ class Command(BaseCommand):
                 "external_alert_id": "LIVE-PEP-PEN-023",
                 "customer_id": "CUST-PEP-023",
                 "is_pep": True,
-                "amount": "2800.00",        # PEN 2,800 — below SBS threshold, but PEP overrides
+                "amount": "2800.00",  # PEN 2,800 — below SBS threshold, but PEP overrides
                 "currency": "PEN",
                 "transaction_date": now - timedelta(hours=3),
                 "status": Alert.Status.PENDING,
@@ -558,7 +558,7 @@ class Command(BaseCommand):
                 "external_alert_id": "LIVE-BELOW-COP-024",
                 "customer_id": "CUST-LOW-024",
                 "is_pep": False,
-                "amount": "3200000.00",     # COP 3.2M — ~USD 780, 32% of SARLAFT threshold
+                "amount": "3200000.00",  # COP 3.2M — ~USD 780, 32% of SARLAFT threshold
                 "currency": "COP",
                 "transaction_date": now - timedelta(days=1),
                 "status": Alert.Status.PENDING,
@@ -577,7 +577,7 @@ class Command(BaseCommand):
                 "external_alert_id": "LIVE-CORP-MED-025",
                 "customer_id": "CUST-CORP-025",
                 "is_pep": False,
-                "amount": "62000.00",       # MXN $62,000 — ~USD 3,647, below CNBV threshold
+                "amount": "62000.00",  # MXN $62,000 — ~USD 3,647, below CNBV threshold
                 "currency": "MXN",
                 "transaction_date": now - timedelta(hours=16),
                 "status": Alert.Status.PENDING,
@@ -597,7 +597,7 @@ class Command(BaseCommand):
                 "external_alert_id": "LIVE-MULE-026",
                 "customer_id": "CUST-MULE-026",
                 "is_pep": False,
-                "amount": "9600.00",        # USD $9,600 — above CNBV USD 7,500 threshold
+                "amount": "9600.00",  # USD $9,600 — above CNBV USD 7,500 threshold
                 "currency": "USD",
                 "transaction_date": now - timedelta(hours=6),
                 "status": Alert.Status.PENDING,
@@ -616,7 +616,7 @@ class Command(BaseCommand):
                 "external_alert_id": "LIVE-TINY-COP-027",
                 "customer_id": "CUST-TINY-027",
                 "is_pep": False,
-                "amount": "480000.00",      # COP 480K — ~USD 117, 4.8% of SARLAFT threshold
+                "amount": "480000.00",  # COP 480K — ~USD 117, 4.8% of SARLAFT threshold
                 "currency": "COP",
                 "transaction_date": now - timedelta(hours=1),
                 "status": Alert.Status.PENDING,
@@ -636,7 +636,7 @@ class Command(BaseCommand):
                 "external_alert_id": "LIVE-INCOME-GAP-028",
                 "customer_id": "CUST-GAP-028",
                 "is_pep": False,
-                "amount": "21500000.00",    # COP 21.5M — ~USD 5,244, 2.15x SARLAFT threshold
+                "amount": "21500000.00",  # COP 21.5M — ~USD 5,244, 2.15x SARLAFT threshold
                 "currency": "COP",
                 "transaction_date": now - timedelta(hours=18),
                 "status": Alert.Status.PENDING,
@@ -661,7 +661,7 @@ class Command(BaseCommand):
                 "external_alert_id": "LIVE-GHOST-PROBE-029",
                 "customer_id": "CUST-PROBE-029",
                 "is_pep": False,
-                "amount": "75.00",          # USD $75 — far below any threshold
+                "amount": "75.00",  # USD $75 — far below any threshold
                 "currency": "USD",
                 "transaction_date": now - timedelta(hours=1),
                 "status": Alert.Status.PENDING,
@@ -671,11 +671,11 @@ class Command(BaseCommand):
                     "alert_type": "ANOMALY_SCORE_CRITICAL",
                     "segment": "retail_individual",
                     "notes": "ML model flagged at 0.97 confidence despite trivial $75 USD amount. "
-                             "Account was dormant for 11 months, then received 14 micro-transfers from "
-                             "8 distinct originators in 48 hours — none individually suspicious, but the "
-                             "burst pattern matches known synthetic-identity activation sequences. "
-                             "Destination account was opened with minimal KYC (student visa holder, no "
-                             "income documentation). No single transfer exceeds $100.",
+                    "Account was dormant for 11 months, then received 14 micro-transfers from "
+                    "8 distinct originators in 48 hours — none individually suspicious, but the "
+                    "burst pattern matches known synthetic-identity activation sequences. "
+                    "Destination account was opened with minimal KYC (student visa holder, no "
+                    "income documentation). No single transfer exceeds $100.",
                 },
             },
             # ── Scenario 30 (Edge Case) ────────────────────────────────────
@@ -691,7 +691,7 @@ class Command(BaseCommand):
                 "external_alert_id": "LIVE-PEP-PHANTOM-030",
                 "customer_id": "CUST-PEP-030",
                 "is_pep": True,
-                "amount": "0.01",           # EUR 0.01 — near-zero, unsupported currency
+                "amount": "0.01",  # EUR 0.01 — near-zero, unsupported currency
                 "currency": "EUR",
                 "transaction_date": now - timedelta(hours=2),
                 "status": Alert.Status.PENDING,
@@ -701,11 +701,11 @@ class Command(BaseCommand):
                     "alert_type": "ROUTINE_CHECK",
                     "segment": "high_value_individual",
                     "notes": "EUR 0.01 cent transfer from a PEP-designated diplomat. Currency is EUR "
-                             "(not in any LATAM regulatory threshold table). XGBoost score is 0.02 — "
-                             "the model considers this transaction harmless. KYC is fully verified, "
-                             "zero prior alerts. Every signal says DISMISS except the PEP flag. "
-                             "Regulation mandates 100% human escalation for PEPs regardless of amount, "
-                             "currency, or risk score.",
+                    "(not in any LATAM regulatory threshold table). XGBoost score is 0.02 — "
+                    "the model considers this transaction harmless. KYC is fully verified, "
+                    "zero prior alerts. Every signal says DISMISS except the PEP flag. "
+                    "Regulation mandates 100% human escalation for PEPs regardless of amount, "
+                    "currency, or risk score.",
                 },
             },
         ]

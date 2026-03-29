@@ -11,7 +11,9 @@ from compliance_agent.rag.interfaces import RegulationChunk
 _MODEL_PATH = "compliance_agent.models.RegulationDocument"
 
 
-def make_chunk(doc_ref: str, chunk_index: int = 0, score: float = 0.8) -> RegulationChunk:
+def make_chunk(
+    doc_ref: str, chunk_index: int = 0, score: float = 0.8
+) -> RegulationChunk:
     return RegulationChunk(
         document_ref=doc_ref,
         source="UIAF",
@@ -44,7 +46,9 @@ async def test_graph_retriever_returns_seed_results():
     retriever = GraphRetriever(embedder=mock_embedder, seed_top_k=2)
 
     with (
-        patch.object(retriever._vector_retriever, "retrieve", AsyncMock(return_value=seed_chunks)),
+        patch.object(
+            retriever._vector_retriever, "retrieve", AsyncMock(return_value=seed_chunks)
+        ),
         patch(_MODEL_PATH) as mock_model,
     ):
         mock_model.objects.filter.return_value = _empty_filter_mock()
@@ -82,7 +86,11 @@ async def test_seed_documents_score_higher_than_neighbors():
     retriever = GraphRetriever(embedder=mock_embedder, seed_top_k=1)
 
     with (
-        patch.object(retriever._vector_retriever, "retrieve", AsyncMock(return_value=[seed_chunk])),
+        patch.object(
+            retriever._vector_retriever,
+            "retrieve",
+            AsyncMock(return_value=[seed_chunk]),
+        ),
         patch(_MODEL_PATH) as mock_model,
     ):
         mock_filter = MagicMock()
@@ -93,7 +101,9 @@ async def test_seed_documents_score_higher_than_neighbors():
         results = await retriever.retrieve("test query", top_k=5)
 
     seed_result = next((r for r in results if r.document_ref == "SEED-DOC"), None)
-    neighbor_result = next((r for r in results if r.document_ref == "NEIGHBOR-DOC"), None)
+    neighbor_result = next(
+        (r for r in results if r.document_ref == "NEIGHBOR-DOC"), None
+    )
     assert seed_result is not None
     if neighbor_result is not None:
         assert seed_result.score > neighbor_result.score
@@ -112,7 +122,9 @@ async def test_graph_retriever_respects_top_k():
     retriever = GraphRetriever(embedder=mock_embedder, seed_top_k=4)
 
     with (
-        patch.object(retriever._vector_retriever, "retrieve", AsyncMock(return_value=seeds)),
+        patch.object(
+            retriever._vector_retriever, "retrieve", AsyncMock(return_value=seeds)
+        ),
         patch(_MODEL_PATH) as mock_model,
     ):
         mock_model.objects.filter.return_value = _empty_filter_mock()

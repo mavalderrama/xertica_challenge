@@ -112,7 +112,10 @@ def ghost_probe_alert(db):
         transaction_date=datetime(2026, 3, 25, 3, 47, 0, tzinfo=UTC),
         status=Alert.Status.PENDING,
         xgboost_score=0.97,
-        raw_payload={"alert_type": "ANOMALY_SCORE_CRITICAL", "segment": "retail_individual"},
+        raw_payload={
+            "alert_type": "ANOMALY_SCORE_CRITICAL",
+            "segment": "retail_individual",
+        },
     )
 
 

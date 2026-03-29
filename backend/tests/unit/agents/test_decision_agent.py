@@ -6,9 +6,9 @@ import pytest
 def test_pep_escalation_reason_contains_regulations():
     from compliance_agent.agents.decision_agent import PEP_ESCALATION_REASON
 
-    assert "SARLAFT" in PEP_ESCALATION_REASON   # Colombia (UIAF)
-    assert "DCG" in PEP_ESCALATION_REASON        # Mexico (CNBV)
-    assert "SBS" in PEP_ESCALATION_REASON        # Peru
+    assert "SARLAFT" in PEP_ESCALATION_REASON  # Colombia (UIAF)
+    assert "DCG" in PEP_ESCALATION_REASON  # Mexico (CNBV)
+    assert "SBS" in PEP_ESCALATION_REASON  # Peru
 
 
 def test_decision_types():

@@ -62,5 +62,5 @@ class MockBigQueryTool(BigQueryToolInterface):
                     "country_code": rng.choice(["CO", "MX", "PE"]),
                 }
             )
-        transactions.sort(key=lambda x: x["transaction_date"], reverse=True)
+        transactions.sort(key=lambda x: x["transaction_date"], reverse=True)  # type: ignore
         return transactions

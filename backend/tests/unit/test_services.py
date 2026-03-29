@@ -1,7 +1,10 @@
 from decimal import Decimal
 from unittest.mock import AsyncMock, MagicMock
+from uuid import UUID
 
 import pytest
+
+_ALERT_ID = "00000000-0000-0000-0000-000000000001"
 
 
 @pytest.mark.asyncio
@@ -14,7 +17,7 @@ async def test_audit_service_log_event():
 
     service = AuditService(audit_log_repo=repo)
     await service.log_agent_event(
-        alert_id="alert-1",
+        alert_id=_ALERT_ID,
         event_type="INVESTIGATION",
         agent_name="InvestigadorAgent",
         input_snapshot={"customer_id": "C1"},
@@ -26,7 +29,7 @@ async def test_audit_service_log_event():
 
     repo.create.assert_called_once()
     call_kwargs = repo.create.call_args.kwargs
-    assert call_kwargs["alert_id"] == "alert-1"
+    assert call_kwargs["alert_id"] == _ALERT_ID
     assert call_kwargs["event_type"] == "INVESTIGATION"
     assert call_kwargs["agent_name"] == "InvestigadorAgent"
     assert call_kwargs["duration_ms"] == 1234
@@ -41,10 +44,10 @@ async def test_audit_service_get_trail():
     repo.get_by_alert_id = AsyncMock(return_value=[MagicMock(), MagicMock()])
 
     service = AuditService(audit_log_repo=repo)
-    events = await service.get_audit_trail("alert-1")
+    events = await service.get_audit_trail(_ALERT_ID)
 
     assert len(events) == 2
-    repo.get_by_alert_id.assert_called_once_with("alert-1")
+    repo.get_by_alert_id.assert_called_once_with(UUID(_ALERT_ID))
 
 
 @pytest.mark.asyncio

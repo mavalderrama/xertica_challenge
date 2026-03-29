@@ -1,4 +1,5 @@
 """Tests for PostgreSQL BM25 sparse retriever (replaces TF-IDF sparse_vectorizer tests)."""
+
 import pytest
 
 
@@ -33,7 +34,9 @@ async def test_sparse_retriever_returns_regulation_chunks():
     mock_doc.article_number = "4"
     mock_doc.content = "PEP debida diligencia intensificada escalamiento obligatorio"
     mock_doc.chunk_index = 0
-    mock_doc.gcs_uri = "gs://compliance-docs/regulations/uiaf_sarlaft_sfc_ce029_2014.txt"
+    mock_doc.gcs_uri = (
+        "gs://compliance-docs/regulations/uiaf_sarlaft_sfc_ce029_2014.txt"
+    )
     mock_doc.rank = 0.75
 
     async def async_docs():

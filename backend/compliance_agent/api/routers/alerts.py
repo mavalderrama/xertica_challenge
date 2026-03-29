@@ -1,4 +1,5 @@
 import logging
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
 
@@ -14,8 +15,10 @@ from compliance_agent.api.schemas.alert_schemas import (
     AlertStatusResponse,
     AuditEventOut,
     AuditTrailResponse,
+    DecisionOut,
     InvestigateRequest,
     InvestigateResponse,
+    RiskAnalysisOut,
 )
 from compliance_agent.repositories.interfaces import IAlertRepository
 from compliance_agent.services.audit_service import AuditService
@@ -34,7 +37,9 @@ async def investigate_alert(
     logger.info("Investigating alert %s", alert_id)
     trace_id = tracer.create_trace_id("investigate_alert", {"alert_id": alert_id})
     try:
-        final_state = await pipeline_service.process_alert(alert_id, langfuse_trace_id=trace_id)
+        final_state = await pipeline_service.process_alert(
+            alert_id, langfuse_trace_id=trace_id
+        )
     except Exception as exc:
         logger.error("Pipeline failed for alert %s: %s", alert_id, exc, exc_info=True)
         raise HTTPException(status_code=500, detail=str(exc)) from exc
@@ -47,8 +52,8 @@ async def investigate_alert(
     return InvestigateResponse(
         alert_id=alert_id,
         status=decision_type,
-        risk_analysis=risk_data or None,
-        decision=decision_data or None,
+        risk_analysis=RiskAnalysisOut.model_validate(risk_data) if risk_data else None,
+        decision=DecisionOut.model_validate(decision_data) if decision_data else None,
         langfuse_trace_id=final_state.get("langfuse_trace_id", ""),
     )
 
@@ -59,7 +64,7 @@ async def get_alert_status(
     alert_repo: IAlertRepository = Depends(get_alert_repo),
 ) -> AlertStatusResponse:
     try:
-        alert = await alert_repo.get_by_id(alert_id)
+        alert = await alert_repo.get_by_id(UUID(alert_id))
     except Exception as exc:
         raise HTTPException(status_code=404, detail="Alert not found") from exc
 
@@ -84,7 +89,9 @@ async def get_audit_trail(
     try:
         events = await audit_service.get_audit_trail(alert_id)
     except Exception as exc:
-        logger.error("Audit trail fetch failed for alert %s: %s", alert_id, exc, exc_info=True)
+        logger.error(
+            "Audit trail fetch failed for alert %s: %s", alert_id, exc, exc_info=True
+        )
         raise HTTPException(status_code=500, detail=str(exc)) from exc
     return AuditTrailResponse(
         alert_id=alert_id,

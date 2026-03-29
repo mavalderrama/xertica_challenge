@@ -2,6 +2,8 @@ import os
 from functools import lru_cache
 from typing import Any
 
+from pydantic import SecretStr
+
 
 @lru_cache
 def get_llm() -> Any:
@@ -12,7 +14,7 @@ def get_llm() -> Any:
 
         return ChatOpenAI(
             model=os.environ.get("OPENAI_MODEL", "gpt-4o-mini"),
-            api_key=os.environ.get("OPENAI_API_KEY", ""),
+            api_key=SecretStr(os.environ.get("OPENAI_API_KEY", "")),
             temperature=0,
         )
 

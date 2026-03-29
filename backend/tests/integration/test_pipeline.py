@@ -93,14 +93,20 @@ async def test_full_pipeline_non_pep(sample_alert):
             audit_service=audit_service,
         )
 
-        compiled = build_compliance_pipeline(investigador, risk_analyzer, decision_agent)
+        compiled = build_compliance_pipeline(
+            investigador, risk_analyzer, decision_agent
+        )
         service = PipelineService(compiled_graph=compiled, alert_repo=alert_repo)
         final_state = await service.process_alert(str(sample_alert.id))
 
     assert "investigation" in final_state
     assert "risk_analysis" in final_state
     assert "decision" in final_state
-    assert final_state["decision"]["decision_type"] in ("ESCALATE", "DISMISS", "REQUEST_INFO")
+    assert final_state["decision"]["decision_type"] in (
+        "ESCALATE",
+        "DISMISS",
+        "REQUEST_INFO",
+    )
 
 
 @pytest.mark.django_db(transaction=True)
@@ -179,7 +185,9 @@ async def test_full_pipeline_pep_always_escalates(sample_pep_alert):
             audit_service=audit_service,
         )
 
-        compiled = build_compliance_pipeline(investigador, risk_analyzer, decision_agent)
+        compiled = build_compliance_pipeline(
+            investigador, risk_analyzer, decision_agent
+        )
         service = PipelineService(compiled_graph=compiled, alert_repo=alert_repo)
         final_state = await service.process_alert(str(sample_pep_alert.id))
 
@@ -227,7 +235,11 @@ async def test_ghost_probe_escalates_on_critical_xgb(ghost_probe_alert):
     risk_chain_output = {
         "risk_score": 9,
         "justification": "XGBoost score 0.97 (CRITICAL band) — dormant account reactivation with burst micro-transfer pattern.",
-        "anomalous_patterns": ["ANOMALY_SCORE_CRITICAL", "dormant_reactivation", "micro_burst"],
+        "anomalous_patterns": [
+            "ANOMALY_SCORE_CRITICAL",
+            "dormant_reactivation",
+            "micro_burst",
+        ],
         "human_summary": "Critical ML anomaly score despite small USD amount. Pattern consistent with account probing.",
     }
     decision_chain_output = {
@@ -282,7 +294,9 @@ async def test_ghost_probe_escalates_on_critical_xgb(ghost_probe_alert):
             audit_service=audit_service,
         )
 
-        compiled = build_compliance_pipeline(investigador, risk_analyzer, decision_agent)
+        compiled = build_compliance_pipeline(
+            investigador, risk_analyzer, decision_agent
+        )
         service = PipelineService(compiled_graph=compiled, alert_repo=alert_repo)
         final_state = await service.process_alert(str(ghost_probe_alert.id))
 
@@ -377,7 +391,9 @@ async def test_pep_phantom_escalates_unconditionally(pep_phantom_alert):
             audit_service=audit_service,
         )
 
-        compiled = build_compliance_pipeline(investigador, risk_analyzer, decision_agent)
+        compiled = build_compliance_pipeline(
+            investigador, risk_analyzer, decision_agent
+        )
         service = PipelineService(compiled_graph=compiled, alert_repo=alert_repo)
         final_state = await service.process_alert(str(pep_phantom_alert.id))
 

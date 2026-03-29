@@ -1,5 +1,6 @@
 from decimal import Decimal
 from typing import Any
+from uuid import UUID
 
 from compliance_agent.repositories.interfaces import IAuditLogRepository
 
@@ -31,4 +32,4 @@ class AuditService:
         )
 
     async def get_audit_trail(self, alert_id: str) -> list[Any]:
-        return await self.audit_log_repo.get_by_alert_id(alert_id)
+        return await self.audit_log_repo.get_by_alert_id(UUID(alert_id))

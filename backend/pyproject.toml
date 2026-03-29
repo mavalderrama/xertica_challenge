@@ -25,6 +25,7 @@ dependencies = [
     "pandas>=3.0.1",
     "nest-asyncio>=1.6.0",
     "jupyterlab>=4.5.6",
+    "pre-commit>=4.5.1",
 ]
 
 [dependency-groups]
@@ -51,9 +52,13 @@ markers = [
     "integration: marks tests as integration tests (require external services)",
 ]
 
+[tool.mypy]
+ignore_missing_imports = true
+exclude = ["compliance_agent/migrations/"]
+
 [tool.ruff]
 line-length = 88
-target-version = "py314"
+target-version = "py313"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "UP", "S", "B", "C4", "RET", "SIM"]
@@ -62,4 +67,7 @@ ignore = ["E501"]
 [tool.ruff.lint.per-file-ignores]
 "tests/**/*.py" = ["S101", "S108", "S311", "S608"]
 "compliance_agent/tools/bigquery_tools.py" = ["S608", "S311"]
-"compliance_agent/api/routers/alerts.py" = ["B008"]
+"compliance_agent/tools/gcs_tools.py" = ["S311"]
+"compliance_agent/api/routers/alerts.py" = ["B008", "E402"]
+"compliance_agent/agents/investigador.py" = ["N806"]
+"compliance_agent/migrations/*.py" = ["E", "N", "UP"]

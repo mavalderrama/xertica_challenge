@@ -4,6 +4,7 @@ Unit tests for PipelineService.
 All repositories and the compiled graph are fully mocked — no DB or LLM calls.
 Written for the refactored async interface where all repo methods are awaitable.
 """
+
 import uuid
 from datetime import UTC, datetime
 from decimal import Decimal
@@ -39,13 +40,15 @@ async def test_process_alert_sets_investigating_status():
     mock_alert_repo.update_status = AsyncMock(return_value=alert)
 
     mock_graph = MagicMock()
-    mock_graph.ainvoke = AsyncMock(return_value={
-        "alert_id": str(alert.id),
-        "alert_data": {},
-        "decision": {"decision_type": "DISMISS"},
-        "errors": [],
-        "langfuse_trace_id": "",
-    })
+    mock_graph.ainvoke = AsyncMock(
+        return_value={
+            "alert_id": str(alert.id),
+            "alert_data": {},
+            "decision": {"decision_type": "DISMISS"},
+            "errors": [],
+            "langfuse_trace_id": "",
+        }
+    )
 
     service = PipelineService(compiled_graph=mock_graph, alert_repo=mock_alert_repo)
     await service.process_alert(str(alert.id))
@@ -69,12 +72,14 @@ async def test_process_alert_pep_escalates():
     mock_alert_repo.update_status = AsyncMock(return_value=alert)
 
     mock_graph = MagicMock()
-    mock_graph.ainvoke = AsyncMock(return_value={
-        "alert_id": str(alert.id),
-        "alert_data": {},
-        "decision": {"decision_type": "ESCALATE"},
-        "errors": [],
-    })
+    mock_graph.ainvoke = AsyncMock(
+        return_value={
+            "alert_id": str(alert.id),
+            "alert_data": {},
+            "decision": {"decision_type": "ESCALATE"},
+            "errors": [],
+        }
+    )
 
     service = PipelineService(compiled_graph=mock_graph, alert_repo=mock_alert_repo)
     await service.process_alert(str(alert.id))
@@ -97,12 +102,14 @@ async def test_process_alert_request_info_sets_awaiting_info():
     mock_alert_repo.update_status = AsyncMock(return_value=alert)
 
     mock_graph = MagicMock()
-    mock_graph.ainvoke = AsyncMock(return_value={
-        "alert_id": str(alert.id),
-        "alert_data": {},
-        "decision": {"decision_type": "REQUEST_INFO"},
-        "errors": [],
-    })
+    mock_graph.ainvoke = AsyncMock(
+        return_value={
+            "alert_id": str(alert.id),
+            "alert_data": {},
+            "decision": {"decision_type": "REQUEST_INFO"},
+            "errors": [],
+        }
+    )
 
     service = PipelineService(compiled_graph=mock_graph, alert_repo=mock_alert_repo)
     await service.process_alert(str(alert.id))
@@ -123,13 +130,15 @@ async def test_process_alert_passes_langfuse_trace_id():
     mock_alert_repo.update_status = AsyncMock(return_value=alert)
 
     mock_graph = MagicMock()
-    mock_graph.ainvoke = AsyncMock(return_value={
-        "alert_id": str(alert.id),
-        "alert_data": {},
-        "decision": {"decision_type": "DISMISS"},
-        "errors": [],
-        "langfuse_trace_id": "my-trace-id",
-    })
+    mock_graph.ainvoke = AsyncMock(
+        return_value={
+            "alert_id": str(alert.id),
+            "alert_data": {},
+            "decision": {"decision_type": "DISMISS"},
+            "errors": [],
+            "langfuse_trace_id": "my-trace-id",
+        }
+    )
 
     service = PipelineService(compiled_graph=mock_graph, alert_repo=mock_alert_repo)
     await service.process_alert(str(alert.id), langfuse_trace_id="my-trace-id")
@@ -151,12 +160,14 @@ async def test_process_alert_no_decision_does_not_update_final_status():
     mock_alert_repo.update_status = AsyncMock(return_value=alert)
 
     mock_graph = MagicMock()
-    mock_graph.ainvoke = AsyncMock(return_value={
-        "alert_id": str(alert.id),
-        "alert_data": {},
-        "decision": {},
-        "errors": [],
-    })
+    mock_graph.ainvoke = AsyncMock(
+        return_value={
+            "alert_id": str(alert.id),
+            "alert_data": {},
+            "decision": {},
+            "errors": [],
+        }
+    )
 
     service = PipelineService(compiled_graph=mock_graph, alert_repo=mock_alert_repo)
     await service.process_alert(str(alert.id))

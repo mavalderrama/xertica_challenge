@@ -5,6 +5,7 @@ on:
     branches: [main, develop]
   pull_request:
     branches: [main]
+  workflow_call:
 
 jobs:
   lint:
@@ -18,12 +19,15 @@ jobs:
       - uses: astral-sh/setup-uv@v5
         with:
           version: "latest"
+          python-version: "3.14"
       - name: Install dev dependencies
         run: uv sync --frozen --group dev
       - name: Run ruff lint
         run: uv run ruff check .
       - name: Run ruff format check
         run: uv run ruff format --check .
+      - name: Mypy type check
+        run: uv run mypy compliance_agent/
 
   test:
     name: Test
@@ -70,6 +74,7 @@ jobs:
       - uses: astral-sh/setup-uv@v5
         with:
           version: "latest"
+          python-version: "3.14"
       - name: Install dependencies
         run: uv sync --frozen --group dev
       - name: Run migrations

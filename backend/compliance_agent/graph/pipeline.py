@@ -17,9 +17,9 @@ def build_compliance_pipeline(
     """
     graph = StateGraph(PipelineState)
 
-    graph.add_node("investigador", investigador.run)
-    graph.add_node("risk_analyzer", risk_analyzer.run)
-    graph.add_node("decision", decision_agent.run)
+    graph.add_node("investigador", investigador.run)  # type: ignore
+    graph.add_node("risk_analyzer", risk_analyzer.run)  # type: ignore
+    graph.add_node("decision", decision_agent.run)  # type: ignore
 
     graph.add_edge(START, "investigador")
     graph.add_edge("investigador", "risk_analyzer")

@@ -56,7 +56,9 @@ class MockGCSTool(GCSToolInterface):
             from pathlib import Path
 
             profiles_file = Path(cls._PROFILES_PATH).resolve()
-            cls._PROFILES = json.loads(profiles_file.read_text()) if profiles_file.exists() else {}
+            cls._PROFILES = (
+                json.loads(profiles_file.read_text()) if profiles_file.exists() else {}
+            )
         return cls._PROFILES
 
     async def extract_pdf_text(self, gcs_uri: str) -> str:
@@ -91,7 +93,12 @@ class MockGCSTool(GCSToolInterface):
         rng = random.Random(customer_id)
         risk_categories = ["LOW", "MEDIUM", "HIGH"]
         segments = ["retail_individual", "sme", "corporate"]
-        activities = ["Domestic commerce", "Import/Export", "Salaried employee", "Freelance"]
+        activities = [
+            "Domestic commerce",
+            "Import/Export",
+            "Salaried employee",
+            "Freelance",
+        ]
         return (
             f"[MOCK PDF] Document: {parts[-1]}  —  Customer: {customer_id}\n\n"
             "=== Customer KYC Profile ===\n"

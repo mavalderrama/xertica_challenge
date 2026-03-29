@@ -1,5 +1,6 @@
 import logging
 from typing import Any
+from uuid import UUID
 
 from compliance_agent.graph.state import PipelineState
 from compliance_agent.repositories.interfaces import IAlertRepository
@@ -22,7 +23,7 @@ class PipelineService:
         from compliance_agent.models import Alert
 
         logger.info("Starting pipeline for alert %s", alert_id)
-        alert = await self.alert_repo.get_by_id(alert_id)
+        alert = await self.alert_repo.get_by_id(UUID(alert_id))
         alert_data = {
             "customer_id": alert.customer_id,
             "is_pep": alert.is_pep,
@@ -40,27 +41,39 @@ class PipelineService:
             "langfuse_trace_id": langfuse_trace_id,
         }
 
-        await self.alert_repo.update_status(alert.id, Alert.Status.INVESTIGATING)
+        await self.alert_repo.update_status(alert.id, Alert.Status.INVESTIGATING)  # type: ignore[arg-type]
         try:
             final_state = await self.compiled_graph.ainvoke(initial_state)
         except Exception as exc:
-            logger.error("Graph invocation failed for alert %s: %s", alert_id, exc, exc_info=True)
+            logger.error(
+                "Graph invocation failed for alert %s: %s", alert_id, exc, exc_info=True
+            )
             raise
 
         errors = final_state.get("errors") or []
         if errors:
-            logger.warning("Pipeline completed with errors for alert %s: %s", alert_id, errors)
+            logger.warning(
+                "Pipeline completed with errors for alert %s: %s", alert_id, errors
+            )
 
         decision_type = final_state.get("decision", {}).get("decision_type", "")
-        logger.info("Pipeline complete for alert %s: decision=%s", alert_id, decision_type or "NONE")
+        logger.info(
+            "Pipeline complete for alert %s: decision=%s",
+            alert_id,
+            decision_type or "NONE",
+        )
 
         if decision_type == "ESCALATE":
-            await self.alert_repo.update_status(alert.id, Alert.Status.ESCALATED)
+            await self.alert_repo.update_status(alert.id, Alert.Status.ESCALATED)  # type: ignore[arg-type]
         elif decision_type == "DISMISS":
-            await self.alert_repo.update_status(alert.id, Alert.Status.DISMISSED)
+            await self.alert_repo.update_status(alert.id, Alert.Status.DISMISSED)  # type: ignore[arg-type]
         elif decision_type == "REQUEST_INFO":
-            await self.alert_repo.update_status(alert.id, Alert.Status.AWAITING_INFO)
+            await self.alert_repo.update_status(alert.id, Alert.Status.AWAITING_INFO)  # type: ignore[arg-type]
         else:
-            logger.warning("Unexpected decision_type %r for alert %s — status not updated", decision_type, alert_id)
+            logger.warning(
+                "Unexpected decision_type %r for alert %s — status not updated",
+                decision_type,
+                alert_id,
+            )
 
         return final_state

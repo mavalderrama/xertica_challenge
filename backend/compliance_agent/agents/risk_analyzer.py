@@ -135,7 +135,9 @@ class RiskAnalyzerAgent(BaseAgent):
         )
         result = JsonOutputParser().parse(message.content)
 
-        investigation = await self.investigation_repo.get_by_id(investigation_data["id"])
+        investigation = await self.investigation_repo.get_by_id(
+            investigation_data["id"]
+        )
         usage = getattr(message, "usage_metadata", None) or {}
         input_tokens = usage.get("input_tokens", 0)
         output_tokens = usage.get("output_tokens", 0)

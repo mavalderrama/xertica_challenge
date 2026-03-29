@@ -7,7 +7,7 @@ from compliance_agent.agents.investigador import InvestigadorAgent
 
 def _make_state(customer_id: str = "CUST-001", is_pep: bool = False) -> dict:
     return {
-        "alert_id": "test-alert-uuid",
+        "alert_id": "00000000-0000-0000-0000-000000000001",
         "alert_data": {
             "customer_id": customer_id,
             "is_pep": is_pep,
@@ -46,7 +46,9 @@ def _make_agent(mock_llm, mock_tracer, mock_bq_tool, mock_gcs_tool, mock_audit_s
 async def test_investigador_returns_structured_context(
     mock_llm, mock_bq_tool, mock_gcs_tool, mock_tracer, mock_audit_service
 ):
-    agent, _, _ = _make_agent(mock_llm, mock_tracer, mock_bq_tool, mock_gcs_tool, mock_audit_service)
+    agent, _, _ = _make_agent(
+        mock_llm, mock_tracer, mock_bq_tool, mock_gcs_tool, mock_audit_service
+    )
 
     with patch("compliance_agent.agents.investigador.Investigation"):
         result = await agent.run(_make_state())

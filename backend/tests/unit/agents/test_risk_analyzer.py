@@ -4,7 +4,9 @@ import pytest
 
 
 @pytest.mark.asyncio
-async def test_risk_analyzer_creates_agent_without_error(mock_llm, mock_tracer, mock_audit_service):
+async def test_risk_analyzer_creates_agent_without_error(
+    mock_llm, mock_tracer, mock_audit_service
+):
     from compliance_agent.agents.risk_analyzer import RiskAnalyzerAgent
 
     risk_repo = MagicMock()

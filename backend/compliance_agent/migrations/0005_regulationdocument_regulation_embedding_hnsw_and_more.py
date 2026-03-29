@@ -6,18 +6,28 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('compliance_agent', '0004_remove_regulationdocument_regulation_search_vector_gin'),
+        (
+            "compliance_agent",
+            "0004_remove_regulationdocument_regulation_search_vector_gin",
+        ),
     ]
 
     operations = [
         migrations.AddIndex(
-            model_name='regulationdocument',
-            index=pgvector.django.indexes.HnswIndex(ef_construction=64, fields=['embedding'], m=16, name='regulation_embedding_hnsw', opclasses=['vector_cosine_ops']),
+            model_name="regulationdocument",
+            index=pgvector.django.indexes.HnswIndex(
+                ef_construction=64,
+                fields=["embedding"],
+                m=16,
+                name="regulation_embedding_hnsw",
+                opclasses=["vector_cosine_ops"],
+            ),
         ),
         migrations.AddIndex(
-            model_name='regulationdocument',
-            index=django.contrib.postgres.indexes.GinIndex(fields=['search_vector'], name='regulation_search_vector_gin'),
+            model_name="regulationdocument",
+            index=django.contrib.postgres.indexes.GinIndex(
+                fields=["search_vector"], name="regulation_search_vector_gin"
+            ),
         ),
     ]

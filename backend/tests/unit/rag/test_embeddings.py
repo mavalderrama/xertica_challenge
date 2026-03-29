@@ -1,4 +1,5 @@
 """Tests for HFEmbedder — uses mocked SentenceTransformer to avoid downloading models."""
+
 import math
 from unittest.mock import MagicMock, patch
 

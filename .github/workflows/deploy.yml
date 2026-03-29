@@ -41,44 +41,47 @@ jobs:
             --quiet || true
 
       - name: Build and push Docker image
+        env:
+          IMAGE: us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/compliance/api:${{ github.sha }}
         run: |
-          IMAGE=us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/compliance/api:${{ github.sha }}
-          docker build -t $IMAGE ./backend
-          docker push $IMAGE
+          docker build -t "$IMAGE" ./backend
+          docker push "$IMAGE"
 
       - name: Deploy to Cloud Run
+        env:
+          IMAGE: us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/compliance/api:${{ github.sha }}
+          DB_CONN: ${{ secrets.CLOUD_SQL_CONNECTION_NAME }}
+          GCS_BUCKET: ${{ secrets.GCS_BUCKET_NAME }}
+          LANGFUSE_HOST: ${{ secrets.LANGFUSE_HOST }}
+          CLOUD_RUN_DOMAIN: ${{ secrets.CLOUD_RUN_DOMAIN }}
+          GCP_PROJECT: ${{ secrets.GCP_PROJECT_ID }}
+          SA: ${{ secrets.WIF_SERVICE_ACCOUNT }}
         run: |
-          IMAGE=us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/compliance/api:${{ github.sha }}
-          DB_CONN=${{ secrets.CLOUD_SQL_CONNECTION_NAME }}
+          ENV_VARS="DJANGO_SETTINGS_MODULE=config.settings.production"
+          ENV_VARS="${ENV_VARS},POSTGRES_HOST=/cloudsql/${DB_CONN}"
+          ENV_VARS="${ENV_VARS},POSTGRES_DB=compliance_db"
+          ENV_VARS="${ENV_VARS},POSTGRES_USER=compliance"
+          ENV_VARS="${ENV_VARS},POSTGRES_PORT=5432"
+          ENV_VARS="${ENV_VARS},GCS_BUCKET_NAME=${GCS_BUCKET}"
+          ENV_VARS="${ENV_VARS},LLM_PROVIDER=vertexai"
+          ENV_VARS="${ENV_VARS},GEMINI_MODEL=gemini-2.0-flash-001"
+          ENV_VARS="${ENV_VARS},GCP_PROJECT_ID=${GCP_PROJECT}"
+          ENV_VARS="${ENV_VARS},GCP_LOCATION=us-central1"
+          ENV_VARS="${ENV_VARS},LANGFUSE_HOST=${LANGFUSE_HOST}"
+          ENV_VARS="${ENV_VARS},ALLOWED_HOSTS=${CLOUD_RUN_DOMAIN}"
+          ENV_VARS="${ENV_VARS},USE_MOCK_BQ=false"
+          ENV_VARS="${ENV_VARS},USE_MOCK_GCS=false"
 
           gcloud run deploy compliance-api \
-            --image=$IMAGE \
+            --image="$IMAGE" \
             --region=us-central1 \
             --platform=managed \
             --no-allow-unauthenticated \
             --port=8000 \
-            --add-cloudsql-instances=$DB_CONN \
-            --set-env-vars="\
-              DJANGO_SETTINGS_MODULE=config.settings.production,\
-              POSTGRES_HOST=/cloudsql/$DB_CONN,\
-              POSTGRES_DB=compliance_db,\
-              POSTGRES_USER=compliance,\
-              POSTGRES_PORT=5432,\
-              GCS_BUCKET_NAME=${{ secrets.GCS_BUCKET_NAME }},\
-              LLM_PROVIDER=vertexai,\
-              GEMINI_MODEL=gemini-2.0-flash-001,\
-              GCP_PROJECT_ID=${{ secrets.GCP_PROJECT_ID }},\
-              GCP_LOCATION=us-central1,\
-              LANGFUSE_HOST=${{ secrets.LANGFUSE_HOST }},\
-              ALLOWED_HOSTS=${{ secrets.CLOUD_RUN_DOMAIN }},\
-              USE_MOCK_BQ=false,\
-              USE_MOCK_GCS=false" \
-            --set-secrets="\
-              POSTGRES_PASSWORD=compliance-db-password:latest,\
-              DJANGO_SECRET_KEY=django-secret-key:latest,\
-              LANGFUSE_PUBLIC_KEY=langfuse-public-key:latest,\
-              LANGFUSE_SECRET_KEY=langfuse-secret-key:latest" \
-            --service-account=${{ secrets.WIF_SERVICE_ACCOUNT }} \
+            --add-cloudsql-instances="$DB_CONN" \
+            --set-env-vars="$ENV_VARS" \
+            --set-secrets="POSTGRES_PASSWORD=compliance-db-password:latest,DJANGO_SECRET_KEY=django-secret-key:latest,LANGFUSE_PUBLIC_KEY=langfuse-public-key:latest,LANGFUSE_SECRET_KEY=langfuse-secret-key:latest" \
+            --service-account="$SA" \
             --min-instances=1 \
             --max-instances=10 \
             --memory=2Gi \

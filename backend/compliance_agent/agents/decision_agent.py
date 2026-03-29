@@ -155,7 +155,13 @@ class DecisionAgent(BaseAgent):
             )
             decision = await self.decision_repo.save(decision)
             duration_ms = int((time.monotonic() - start) * 1000)
-            await self._write_audit_log(state, decision, is_pep_override=True, duration_ms=duration_ms, token_cost_usd=0.0)
+            await self._write_audit_log(
+                state,
+                decision,
+                is_pep_override=True,
+                duration_ms=duration_ms,
+                token_cost_usd=0.0,
+            )
             return self._build_output(state, decision)
 
         # RAG retrieval for non-PEP decisions
@@ -197,12 +203,22 @@ class DecisionAgent(BaseAgent):
         )
         decision = await self.decision_repo.save(decision)
         duration_ms = int((time.monotonic() - start) * 1000)
-        await self._write_audit_log(state, decision, is_pep_override=False, duration_ms=duration_ms, token_cost_usd=cost_usd)
+        await self._write_audit_log(
+            state,
+            decision,
+            is_pep_override=False,
+            duration_ms=duration_ms,
+            token_cost_usd=cost_usd,
+        )
         return self._build_output(state, decision)
 
     async def _write_audit_log(
-        self, state: dict, decision: Decision, is_pep_override: bool,
-        duration_ms: int = 0, token_cost_usd: float = 0.0,
+        self,
+        state: dict,
+        decision: Decision,
+        is_pep_override: bool,
+        duration_ms: int = 0,
+        token_cost_usd: float = 0.0,
     ) -> None:
         await self.audit_service.log_agent_event(
             alert_id=state["alert_id"],

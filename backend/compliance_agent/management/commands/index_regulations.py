@@ -16,6 +16,7 @@ Options:
 
 import asyncio
 from pathlib import Path
+from typing import TypedDict
 
 from django.core.management.base import BaseCommand
 
@@ -29,34 +30,42 @@ from compliance_agent.tools.gcs_tools import MockGCSTool
 _BACKEND_DIR = Path(__file__).resolve().parents[3]  # backend/
 _FIXTURES_DIR = _BACKEND_DIR / "tests" / "fixtures" / "regulatory_docs"
 
-REGULATION_FILES = [
+
+class _RegEntry(TypedDict):
+    path: Path
+    source: str
+    document_ref: str
+    gcs_uri: str
+
+
+REGULATION_FILES: list[_RegEntry] = [
     {
         "path": _FIXTURES_DIR / "uiaf_sarlaft_sfc_ce029_2014.txt",
-        "source": RegulationDocument.Source.UIAF,
+        "source": str(RegulationDocument.Source.UIAF),
         "document_ref": "uiaf_sarlaft_sfc_ce029_2014",
         "gcs_uri": "gs://compliance-docs/regulations/uiaf_sarlaft_sfc_ce029_2014.txt",
     },
     {
         "path": _FIXTURES_DIR / "uiaf_decreto_830_2021.txt",
-        "source": RegulationDocument.Source.UIAF,
+        "source": str(RegulationDocument.Source.UIAF),
         "document_ref": "uiaf_decreto_830_2021",
         "gcs_uri": "gs://compliance-docs/regulations/uiaf_decreto_830_2021.txt",
     },
     {
         "path": _FIXTURES_DIR / "cnbv_dcg_art115.txt",
-        "source": RegulationDocument.Source.CNBV,
+        "source": str(RegulationDocument.Source.CNBV),
         "document_ref": "cnbv_dcg_art115",
         "gcs_uri": "gs://compliance-docs/regulations/cnbv_dcg_art115.txt",
     },
     {
         "path": _FIXTURES_DIR / "sbs_resolucion_789_2018.txt",
-        "source": RegulationDocument.Source.SBS,
+        "source": str(RegulationDocument.Source.SBS),
         "document_ref": "sbs_resolucion_789_2018",
         "gcs_uri": "gs://compliance-docs/regulations/sbs_resolucion_789_2018.txt",
     },
     {
         "path": _FIXTURES_DIR / "sbs_ley_27693_uif.txt",
-        "source": RegulationDocument.Source.SBS,
+        "source": str(RegulationDocument.Source.SBS),
         "document_ref": "sbs_ley_27693_uif",
         "gcs_uri": "gs://compliance-docs/regulations/sbs_ley_27693_uif.txt",
     },

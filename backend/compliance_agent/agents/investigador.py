@@ -1,6 +1,7 @@
 import asyncio
 import time
 from typing import Any
+from uuid import UUID
 
 from compliance_agent.agents.base import BaseAgent
 from compliance_agent.models import Investigation
@@ -50,7 +51,8 @@ class InvestigadorAgent(BaseAgent):
             *[self.gcs_tool.extract_pdf_text(uri) for uri in doc_uris]
         )
         documents_analyzed = [
-            {"uri": uri, "text": text} for uri, text in zip(doc_uris, doc_texts, strict=True)
+            {"uri": uri, "text": text}
+            for uri, text in zip(doc_uris, doc_texts, strict=True)
         ]
 
         total_amount = sum(t.get("amount", 0) for t in tx_history)
@@ -74,7 +76,7 @@ class InvestigadorAgent(BaseAgent):
 
         duration = time.monotonic() - start
 
-        alert = await self.alert_repo.get_by_id(alert_id)
+        alert = await self.alert_repo.get_by_id(UUID(alert_id))
         investigation = Investigation(
             alert=alert,
             transaction_history=tx_history,
@@ -96,7 +98,10 @@ class InvestigadorAgent(BaseAgent):
             token_cost_usd=0.0,
         )
 
-        return {**state, "investigation": {"id": str(investigation.id), **structured_context}}
+        return {
+            **state,
+            "investigation": {"id": str(investigation.id), **structured_context},
+        }
 
     @staticmethod
     def _extract_customer_profile(documents_analyzed: list[dict]) -> dict:

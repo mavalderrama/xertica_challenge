@@ -38,9 +38,7 @@ class LangfuseTracer:
     def create_trace(self, name: str, metadata: dict | None = None) -> Any:
         return self._get_client().trace(name=name, metadata=metadata or {})
 
-    def create_span(
-        self, trace: Any, name: str, input_data: dict | None = None
-    ) -> Any:
+    def create_span(self, trace: Any, name: str, input_data: dict | None = None) -> Any:
         return trace.span(name=name, input=input_data or {})
 
     def get_langchain_handler(self, trace: Any) -> Any:

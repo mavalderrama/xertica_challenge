@@ -4,14 +4,16 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('compliance_agent', '0003_remove_regulationdocument_sparse_embedding_and_more'),
+        (
+            "compliance_agent",
+            "0003_remove_regulationdocument_sparse_embedding_and_more",
+        ),
     ]
 
     operations = [
         migrations.RemoveIndex(
-            model_name='regulationdocument',
-            name='regulation_search_vector_gin',
+            model_name="regulationdocument",
+            name="regulation_search_vector_gin",
         ),
     ]

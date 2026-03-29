@@ -9,20 +9,23 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('compliance_agent', '0001_initial'),
+        ("compliance_agent", "0001_initial"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='regulationdocument',
-            name='sparse_embedding',
-            field=pgvector.django.sparsevec.SparseVectorField(blank=True, dimensions=30000, null=True),
+            model_name="regulationdocument",
+            name="sparse_embedding",
+            field=pgvector.django.sparsevec.SparseVectorField(
+                blank=True, dimensions=30000, null=True
+            ),
         ),
         migrations.AlterField(
-            model_name='regulationdocument',
-            name='embedding',
-            field=pgvector.django.vector.VectorField(blank=True, dimensions=384, null=True),
+            model_name="regulationdocument",
+            name="embedding",
+            field=pgvector.django.vector.VectorField(
+                blank=True, dimensions=384, null=True
+            ),
         ),
     ]

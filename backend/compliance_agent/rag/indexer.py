@@ -17,9 +17,7 @@ class RegulationIndexer(IIndexer):
         self.embedder = embedder
         self.chunker = chunker or RegulationChunker()
 
-    async def index_document(
-        self, gcs_uri: str, source: str, document_ref: str
-    ) -> int:
+    async def index_document(self, gcs_uri: str, source: str, document_ref: str) -> int:
         from django.contrib.postgres.search import SearchVector
 
         from compliance_agent.models import RegulationDocument

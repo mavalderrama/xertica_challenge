@@ -6,6 +6,7 @@ by default for local runs).  All repository methods are async, so every test
 is marked with both @pytest.mark.django_db(transaction=True) and
 @pytest.mark.asyncio.
 """
+
 import uuid
 from decimal import Decimal
 
@@ -28,6 +29,7 @@ from compliance_agent.repositories import (
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 async def _make_alert(
     ext_id: str = "REPO-TEST-001",
@@ -57,7 +59,9 @@ async def _make_investigation(alert: Alert) -> Investigation:
     )
 
 
-async def _make_risk_analysis(investigation: Investigation, score: int = 5) -> RiskAnalysis:
+async def _make_risk_analysis(
+    investigation: Investigation, score: int = 5
+) -> RiskAnalysis:
     return await RiskAnalysis.objects.acreate(
         investigation=investigation,
         risk_score=score,
@@ -94,7 +98,6 @@ class TestAlertRepository:
         assert result.customer_id == "CUST-002"
 
     async def test_get_by_id_raises_for_unknown_id(self):
-
         repo = AlertRepository()
         with pytest.raises(Exception):  # noqa: B017 — Django raises DoesNotExist (ObjectDoesNotExist subclass)
             await repo.get_by_id(uuid.uuid4())

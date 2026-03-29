@@ -6,26 +6,25 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('compliance_agent', '0002_regulationdocument_sparse_embedding'),
+        ("compliance_agent", "0002_regulationdocument_sparse_embedding"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='regulationdocument',
-            name='sparse_embedding',
+            model_name="regulationdocument",
+            name="sparse_embedding",
         ),
         migrations.AddField(
-            model_name='regulationdocument',
-            name='search_vector',
+            model_name="regulationdocument",
+            name="search_vector",
             field=django.contrib.postgres.search.SearchVectorField(null=True),
         ),
         migrations.AddIndex(
-            model_name='regulationdocument',
+            model_name="regulationdocument",
             index=GinIndex(
-                fields=['search_vector'],
-                name='regulation_search_vector_gin',
+                fields=["search_vector"],
+                name="regulation_search_vector_gin",
             ),
         ),
     ]
