@@ -54,10 +54,16 @@ jobs:
       POSTGRES_DB: compliance_db
       POSTGRES_USER: compliance
       POSTGRES_PASSWORD: compliance
-      USE_MOCK_BQ: "true"
-      USE_MOCK_GCS: "true"
+      # LLM provider — tests use mock LLM so no real API call is made,
+      # but the import in dependencies.py still requires these vars to be set.
+      LLM_PROVIDER: openai
+      OPENAI_API_KEY: test-key-ci-no-real-calls
+      # Langfuse — tests use dummy keys; no real Langfuse server is needed.
+      LANGFUSE_HOST: http://localhost:3000
       LANGFUSE_PUBLIC_KEY: "pk-lf-test"
       LANGFUSE_SECRET_KEY: "sk-lf-test"
+      USE_MOCK_BQ: "true"
+      USE_MOCK_GCS: "true"
 
     steps:
       - uses: actions/checkout@v4

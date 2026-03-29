@@ -93,3 +93,45 @@ def sample_pep_alert(db):
         status=Alert.Status.PENDING,
         xgboost_score=0.91,
     )
+
+
+@pytest.fixture
+def ghost_probe_alert(db):
+    """Edge case: CRITICAL xgboost score (0.97) on a trivially small USD amount ($75).
+    Tests that the ML signal dominates over the low-amount heuristic."""
+    from datetime import datetime
+
+    from compliance_agent.models import Alert
+
+    return Alert.objects.create(
+        external_alert_id="TEST-GHOST-PROBE-029",
+        customer_id="CUST-PROBE-029",
+        is_pep=False,
+        amount="75.00",
+        currency="USD",
+        transaction_date=datetime(2026, 3, 25, 3, 47, 0, tzinfo=UTC),
+        status=Alert.Status.PENDING,
+        xgboost_score=0.97,
+        raw_payload={"alert_type": "ANOMALY_SCORE_CRITICAL", "segment": "retail_individual"},
+    )
+
+
+@pytest.fixture
+def pep_phantom_alert(db):
+    """Edge case: PEP=True but every other signal says DISMISS (EUR 0.01, xgb=0.02).
+    Tests that the PEP hard-rule is truly unconditional."""
+    from datetime import datetime
+
+    from compliance_agent.models import Alert
+
+    return Alert.objects.create(
+        external_alert_id="TEST-PEP-PHANTOM-030",
+        customer_id="CUST-PEP-030",
+        is_pep=True,
+        amount="0.01",
+        currency="EUR",
+        transaction_date=datetime(2026, 3, 25, 9, 0, 0, tzinfo=UTC),
+        status=Alert.Status.PENDING,
+        xgboost_score=0.02,
+        raw_payload={"alert_type": "ROUTINE_CHECK", "segment": "high_value_individual"},
+    )

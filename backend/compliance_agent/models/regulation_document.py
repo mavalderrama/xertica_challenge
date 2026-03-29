@@ -1,8 +1,9 @@
 import uuid
 
+from django.contrib.postgres.indexes import GinIndex
 from django.contrib.postgres.search import SearchVectorField
 from django.db import models
-from pgvector.django import VectorField
+from pgvector.django import HnswIndex, VectorField
 
 
 class RegulationDocument(models.Model):
@@ -31,6 +32,16 @@ class RegulationDocument(models.Model):
     class Meta:
         app_label = "compliance_agent"
         unique_together = [("document_ref", "chunk_index")]
+        indexes = [
+            HnswIndex(
+                fields=["embedding"],
+                name="regulation_embedding_hnsw",
+                m=16,
+                ef_construction=64,
+                opclasses=["vector_cosine_ops"],
+            ),
+            GinIndex(fields=["search_vector"], name="regulation_search_vector_gin"),
+        ]
 
     def __str__(self) -> str:
         return f"[{self.source}] {self.document_ref} chunk {self.chunk_index}"

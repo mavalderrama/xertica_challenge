@@ -116,9 +116,9 @@ class RiskAnalyzerAgent(BaseAgent):
         alert_data: dict = state["alert_data"]
 
         start = time.monotonic()
-        chain = RISK_PROMPT | self.llm | JsonOutputParser()
+        chain = RISK_PROMPT | self.llm
         raw_payload = alert_data.get("raw_payload") or {}
-        result = await chain.ainvoke(
+        message = await chain.ainvoke(
             {
                 "structured_context": str(investigation_data),
                 "amount": alert_data.get("amount", 0),
@@ -133,10 +133,13 @@ class RiskAnalyzerAgent(BaseAgent):
                 "currencies": investigation_data.get("currencies", []),
             }
         )
+        result = JsonOutputParser().parse(message.content)
 
         investigation = await self.investigation_repo.get_by_id(investigation_data["id"])
-        usage_metadata = getattr(self.llm, "last_token_usage", {})
-        token_count = usage_metadata.get("total_tokens", 0)
+        usage = getattr(message, "usage_metadata", None) or {}
+        input_tokens = usage.get("input_tokens", 0)
+        output_tokens = usage.get("output_tokens", 0)
+        token_count = input_tokens + output_tokens
 
         risk_analysis = RiskAnalysis(
             investigation=investigation,
@@ -150,8 +153,6 @@ class RiskAnalyzerAgent(BaseAgent):
         risk_analysis = await self.risk_analysis_repo.save(risk_analysis)
 
         duration_ms = int((time.monotonic() - start) * 1000)
-        input_tokens = token_count // 2
-        output_tokens = token_count - input_tokens
         cost_usd = estimate_cost(input_tokens, output_tokens)
         await self.audit_service.log_agent_event(
             alert_id=str(state["alert_id"]),

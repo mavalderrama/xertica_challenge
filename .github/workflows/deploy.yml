@@ -6,9 +6,14 @@ on:
     tags: ["v*"]
 
 jobs:
+  # Gate: only deploy if CI passes on the same commit.
+  ci:
+    uses: ./.github/workflows/ci.yml
+
   deploy:
     name: Build & Deploy
     runs-on: ubuntu-latest
+    needs: ci
     permissions:
       contents: read
       id-token: write
@@ -25,6 +30,16 @@ jobs:
       - name: Configure Docker for Artifact Registry
         run: gcloud auth configure-docker us-central1-docker.pkg.dev
 
+      # Create the Artifact Registry repository if it doesn't exist yet.
+      # --quiet makes this idempotent (no error if repo already exists).
+      - name: Ensure Artifact Registry repository exists
+        run: |
+          gcloud artifacts repositories create compliance \
+            --repository-format=docker \
+            --location=us-central1 \
+            --description="Compliance API Docker images" \
+            --quiet || true
+
       - name: Build and push Docker image
         run: |
           IMAGE=us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/compliance/api:${{ github.sha }}
@@ -34,13 +49,36 @@ jobs:
       - name: Deploy to Cloud Run
         run: |
           IMAGE=us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/compliance/api:${{ github.sha }}
+          DB_CONN=${{ secrets.CLOUD_SQL_CONNECTION_NAME }}
+
           gcloud run deploy compliance-api \
             --image=$IMAGE \
             --region=us-central1 \
             --platform=managed \
             --no-allow-unauthenticated \
-            --set-env-vars="DJANGO_SETTINGS_MODULE=config.settings.production" \
-            --set-secrets="POSTGRES_PASSWORD=compliance-db-password:latest,DJANGO_SECRET_KEY=django-secret-key:latest" \
+            --port=8000 \
+            --add-cloudsql-instances=$DB_CONN \
+            --set-env-vars="\
+              DJANGO_SETTINGS_MODULE=config.settings.production,\
+              POSTGRES_HOST=/cloudsql/$DB_CONN,\
+              POSTGRES_DB=compliance_db,\
+              POSTGRES_USER=compliance,\
+              POSTGRES_PORT=5432,\
+              GCS_BUCKET_NAME=${{ secrets.GCS_BUCKET_NAME }},\
+              LLM_PROVIDER=vertexai,\
+              GEMINI_MODEL=gemini-2.0-flash-001,\
+              GCP_PROJECT_ID=${{ secrets.GCP_PROJECT_ID }},\
+              GCP_LOCATION=us-central1,\
+              LANGFUSE_HOST=${{ secrets.LANGFUSE_HOST }},\
+              ALLOWED_HOSTS=${{ secrets.CLOUD_RUN_DOMAIN }},\
+              USE_MOCK_BQ=false,\
+              USE_MOCK_GCS=false" \
+            --set-secrets="\
+              POSTGRES_PASSWORD=compliance-db-password:latest,\
+              DJANGO_SECRET_KEY=django-secret-key:latest,\
+              LANGFUSE_PUBLIC_KEY=langfuse-public-key:latest,\
+              LANGFUSE_SECRET_KEY=langfuse-secret-key:latest" \
+            --service-account=${{ secrets.WIF_SERVICE_ACCOUNT }} \
             --min-instances=1 \
             --max-instances=10 \
             --memory=2Gi \

@@ -9,28 +9,43 @@
 #   4. make index-regulations      (regulatory docs indexed for RAG)
 #
 # Usage:
-#   bash scripts/live_test.sh [SCENARIO] [BASE_URL] [--judge|--no-judge]
+#   bash scripts/live_test.sh [OPTIONS] [SCENARIO] [BASE_URL]
 #
-# Arguments:
-#   SCENARIO     One of: low-risk | high-risk | pep-small | pep-large |
-#                        mid-risk | multi-ccy | corp | safe | all  (default: all)
-#   BASE_URL     API base URL. Default: http://localhost:8000
+# Options:
+#   -s NUM       Run only scenario number NUM (1-30)
+#   -l NUM       Run the first NUM scenarios (1-30)
 #   --judge      Force-run the LLM judge after scenarios complete
 #   --no-judge   Skip the LLM judge (useful when running a single scenario)
 #
+# Arguments:
+#   SCENARIO     One of: low-risk | high-risk | pep-small | pep-large |
+#                        mid-risk | multi-ccy | corp | safe | ghost-probe |
+#                        pep-phantom | all  (default: all)
+#   BASE_URL     API base URL. Default: http://localhost:8000
+#
 # LLM judge runs automatically when SCENARIO=all (override with --no-judge).
+# Edge case scenarios:
+#   ghost-probe   — xgboost=0.97 on $75 USD (critical ML signal vs trivial amount)
+#   pep-phantom   — PEP=True on EUR 0.01 xgb=0.02 (hard-rule against all signals)
 # =============================================================================
 
 set -euo pipefail
 
 # ── Argument parsing ───────────────────────────────────────────────────────────
-SCENARIO="${1:-all}"
-BASE_URL="${2:-http://localhost:8000}"
+SCENARIO="all"
+BASE_URL="http://localhost:8000"
 RUN_JUDGE="auto"   # auto | true | false
-for _arg in "${@:3}"; do
-    case "$_arg" in
-        --judge)    RUN_JUDGE="true"  ;;
-        --no-judge) RUN_JUDGE="false" ;;
+SCENARIO_NUM=""    # -s NUM: run only this scenario number
+LIMIT=""           # -l NUM: run only the first N scenarios
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -s) SCENARIO_NUM="$2"; shift 2 ;;
+        -l) LIMIT="$2"; shift 2 ;;
+        --judge)    RUN_JUDGE="true";  shift ;;
+        --no-judge) RUN_JUDGE="false"; shift ;;
+        http://*|https://*)  BASE_URL="$1"; shift ;;
+        *)  SCENARIO="$1"; shift ;;
     esac
 done
 
@@ -201,90 +216,87 @@ run_investigation() {
     fi
 }
 
-# ── Scenario definitions ───────────────────────────────────────────────────────
-scenario_low_risk()  {
-    run_investigation "Low-Risk Dismissal"        "LIVE-LOW-RISK-001"  "DISMISS"       "" 1
+# ── Scenario table: (num, name, ext_id, expected_decision) ────────────────────
+# Used for both named-scenario dispatch and numeric -s / -l selection.
+declare -a SCENARIO_NAMES=(
+    ""                    # 0-indexed padding; scenarios start at 1
+    "low-risk"            # 1
+    "high-risk"           # 2
+    "pep-small"           # 3
+    "pep-large"           # 4
+    "mid-risk"            # 5
+    "multi-ccy"           # 6
+    "corp"                # 7
+    "safe"                # 8
+    "struct"              # 9
+    "new-acct"            # 10
+    "micro"               # 11
+    "pep-corp"            # 12
+    "high-pen"            # 13
+    "safe-pen"            # 14
+    "under-thresh"        # 15
+    "intl-wire"           # 16
+    "sme-low"             # 17
+    "id-change"           # 18
+    "large-mxn"           # 19
+    "remittance"          # 20
+    "odd-timing"          # 21
+    "large-usd"           # 22
+    "pep-pen"             # 23
+    "below-cop"           # 24
+    "corp-med"            # 25
+    "mule"                # 26
+    "tiny-cop"            # 27
+    "income-gap"          # 28
+    "ghost-probe"         # 29
+    "pep-phantom"         # 30
+)
+TOTAL_SCENARIOS=30
+
+run_scenario_by_num() {
+    local n="$1"
+    case "$n" in
+        1)  run_investigation "Low-Risk Dismissal"        "LIVE-LOW-RISK-001"     "DISMISS"      "" "$n" ;;
+        2)  run_investigation "High-Risk Escalation"      "LIVE-HIGH-RISK-002"    "ESCALATE"     "" "$n" ;;
+        3)  run_investigation "PEP — Small Amount"        "LIVE-PEP-SMALL-003"    "ESCALATE"     "" "$n" ;;
+        4)  run_investigation "PEP — Large Amount"        "LIVE-PEP-LARGE-004"    "ESCALATE"     "" "$n" ;;
+        5)  run_investigation "Mid-Risk Request Info"     "LIVE-MID-RISK-005"     "REQUEST_INFO" "" "$n" ;;
+        6)  run_investigation "Multi-Currency Activity"   "LIVE-MULTI-CCY-006"    "ESCALATE"     "" "$n" ;;
+        7)  run_investigation "Corporate High COP Amount" "LIVE-CORP-007"         "ESCALATE"     "" "$n" ;;
+        8)  run_investigation "Safe Retail Customer"      "LIVE-SAFE-008"         "DISMISS"      "" "$n" ;;
+        9)  run_investigation "COP Structuring Pattern"   "LIVE-STRUCT-009"       "ESCALATE"     "" "$n" ;;
+        10) run_investigation "New Account Large USD"     "LIVE-NEW-ACCT-010"     "REQUEST_INFO" "" "$n" ;;
+        11) run_investigation "Micro-Transaction USD"     "LIVE-MICRO-011"        "DISMISS"      "" "$n" ;;
+        12) run_investigation "PEP Corporate High USD"    "LIVE-PEP-CORP-012"     "ESCALATE"     "" "$n" ;;
+        13) run_investigation "High PEN Above Threshold"  "LIVE-HIGH-PEN-013"     "ESCALATE"     "" "$n" ;;
+        14) run_investigation "Safe PEN Retail"           "LIVE-SAFE-PEN-014"     "DISMISS"      "" "$n" ;;
+        15) run_investigation "USD Structuring CNBV"      "LIVE-UNDER-THRESH-015" "ESCALATE"     "" "$n" ;;
+        16) run_investigation "FATF High-Risk Wire"       "LIVE-INTL-WIRE-016"    "ESCALATE"     "" "$n" ;;
+        17) run_investigation "SME Low-Risk MXN"          "LIVE-SME-LOW-017"      "DISMISS"      "" "$n" ;;
+        18) run_investigation "Identity Change PEN"       "LIVE-ID-CHANGE-018"    "REQUEST_INFO" "" "$n" ;;
+        19) run_investigation "Large MXN Wire"            "LIVE-LARGE-MXN-019"    "ESCALATE"     "" "$n" ;;
+        20) run_investigation "Family Remittance USD"     "LIVE-REMITTANCE-020"   "DISMISS"      "" "$n" ;;
+        21) run_investigation "Unusual-Hour PEN"          "LIVE-ODD-TIMING-021"   "REQUEST_INFO" "" "$n" ;;
+        22) run_investigation "Large USD SME Wire"        "LIVE-LARGE-USD-022"    "ESCALATE"     "" "$n" ;;
+        23) run_investigation "PEP Small PEN"             "LIVE-PEP-PEN-023"      "ESCALATE"     "" "$n" ;;
+        24) run_investigation "Below-Threshold COP"       "LIVE-BELOW-COP-024"    "DISMISS"      "" "$n" ;;
+        25) run_investigation "Corporate MXN Unusual"     "LIVE-CORP-MED-025"     "REQUEST_INFO" "" "$n" ;;
+        26) run_investigation "Money-Mule Pass-Through"   "LIVE-MULE-026"         "ESCALATE"     "" "$n" ;;
+        27) run_investigation "Tiny COP Routine"          "LIVE-TINY-COP-027"     "DISMISS"      "" "$n" ;;
+        28) run_investigation "Income Gap COP"            "LIVE-INCOME-GAP-028"   "REQUEST_INFO" "" "$n" ;;
+        29) run_investigation "Ghost Probe"               "LIVE-GHOST-PROBE-029"  "ESCALATE"     "" "$n" ;;
+        30) run_investigation "PEP Phantom"               "LIVE-PEP-PHANTOM-030"  "ESCALATE"     "" "$n" ;;
+        *)  fail "Unknown scenario number: $n (valid: 1-${TOTAL_SCENARIOS})"; exit 1 ;;
+    esac
 }
-scenario_high_risk() {
-    run_investigation "High-Risk Escalation"      "LIVE-HIGH-RISK-002" "ESCALATE"      "" 2
-}
-scenario_pep_small() {
-    run_investigation "PEP — Small Amount"        "LIVE-PEP-SMALL-003" "ESCALATE"      "" 3
-}
-scenario_pep_large() {
-    run_investigation "PEP — Large Amount"        "LIVE-PEP-LARGE-004" "ESCALATE"      "" 4
-}
-scenario_mid_risk()  {
-    run_investigation "Mid-Risk Request Info"     "LIVE-MID-RISK-005"  "REQUEST_INFO"  "" 5
-}
-scenario_multi_ccy() {
-    run_investigation "Multi-Currency Activity"   "LIVE-MULTI-CCY-006" "ESCALATE"      "" 6
-}
-scenario_corp()      {
-    run_investigation "Corporate High COP Amount" "LIVE-CORP-007"      "ESCALATE"      "" 7
-}
-scenario_safe()      {
-    run_investigation "Safe Retail Customer"      "LIVE-SAFE-008"      "DISMISS"       "" 8
-}
-scenario_struct()    {
-    run_investigation "COP Structuring Pattern"   "LIVE-STRUCT-009"    "ESCALATE"      "" 9
-}
-scenario_new_acct()  {
-    run_investigation "New Account Large USD"     "LIVE-NEW-ACCT-010"  "REQUEST_INFO"  "" 10
-}
-scenario_micro()     {
-    run_investigation "Micro-Transaction USD"     "LIVE-MICRO-011"     "DISMISS"       "" 11
-}
-scenario_pep_corp()  {
-    run_investigation "PEP Corporate High USD"    "LIVE-PEP-CORP-012"  "ESCALATE"      "" 12
-}
-scenario_high_pen()  {
-    run_investigation "High PEN Above Threshold"  "LIVE-HIGH-PEN-013"  "ESCALATE"      "" 13
-}
-scenario_safe_pen()  {
-    run_investigation "Safe PEN Retail"           "LIVE-SAFE-PEN-014"  "DISMISS"       "" 14
-}
-scenario_under_thresh() {
-    run_investigation "USD Structuring CNBV"      "LIVE-UNDER-THRESH-015" "ESCALATE"   "" 15
-}
-scenario_intl_wire() {
-    run_investigation "FATF High-Risk Wire"       "LIVE-INTL-WIRE-016" "ESCALATE"      "" 16
-}
-scenario_sme_low()   {
-    run_investigation "SME Low-Risk MXN"          "LIVE-SME-LOW-017"   "DISMISS"       "" 17
-}
-scenario_id_change() {
-    run_investigation "Identity Change PEN"       "LIVE-ID-CHANGE-018" "REQUEST_INFO"  "" 18
-}
-scenario_large_mxn() {
-    run_investigation "Large MXN Wire"            "LIVE-LARGE-MXN-019" "ESCALATE"      "" 19
-}
-scenario_remittance() {
-    run_investigation "Family Remittance USD"     "LIVE-REMITTANCE-020" "DISMISS"      "" 20
-}
-scenario_odd_timing() {
-    run_investigation "Unusual-Hour PEN"          "LIVE-ODD-TIMING-021" "REQUEST_INFO" "" 21
-}
-scenario_large_usd() {
-    run_investigation "Large USD SME Wire"        "LIVE-LARGE-USD-022" "ESCALATE"      "" 22
-}
-scenario_pep_pen()   {
-    run_investigation "PEP Small PEN"             "LIVE-PEP-PEN-023"   "ESCALATE"      "" 23
-}
-scenario_below_cop() {
-    run_investigation "Below-Threshold COP"       "LIVE-BELOW-COP-024" "DISMISS"       "" 24
-}
-scenario_corp_med()  {
-    run_investigation "Corporate MXN Unusual"     "LIVE-CORP-MED-025"  "REQUEST_INFO"  "" 25
-}
-scenario_mule()      {
-    run_investigation "Money-Mule Pass-Through"   "LIVE-MULE-026"      "ESCALATE"      "" 26
-}
-scenario_tiny_cop()  {
-    run_investigation "Tiny COP Routine"          "LIVE-TINY-COP-027"  "DISMISS"       "" 27
-}
-scenario_income_gap() {
-    run_investigation "Income Gap COP"            "LIVE-INCOME-GAP-028" "REQUEST_INFO" "" 28
+
+# Convert a named scenario to its number
+name_to_num() {
+    local name="$1"
+    for i in $(seq 1 $TOTAL_SCENARIOS); do
+        [[ "${SCENARIO_NAMES[$i]}" == "$name" ]] && echo "$i" && return
+    done
+    echo ""
 }
 
 # ── Main ───────────────────────────────────────────────────────────────────────
@@ -297,74 +309,42 @@ echo -e "${NC}"
 
 check_api_health
 
-case "$SCENARIO" in
-    low-risk)     scenario_low_risk    ;;
-    high-risk)    scenario_high_risk   ;;
-    pep-small)    scenario_pep_small   ;;
-    pep-large)    scenario_pep_large   ;;
-    mid-risk)     scenario_mid_risk    ;;
-    multi-ccy)    scenario_multi_ccy   ;;
-    corp)         scenario_corp        ;;
-    safe)         scenario_safe        ;;
-    struct)       scenario_struct      ;;
-    new-acct)     scenario_new_acct    ;;
-    micro)        scenario_micro       ;;
-    pep-corp)     scenario_pep_corp    ;;
-    high-pen)     scenario_high_pen    ;;
-    safe-pen)     scenario_safe_pen    ;;
-    under-thresh) scenario_under_thresh ;;
-    intl-wire)    scenario_intl_wire   ;;
-    sme-low)      scenario_sme_low     ;;
-    id-change)    scenario_id_change   ;;
-    large-mxn)    scenario_large_mxn   ;;
-    remittance)   scenario_remittance  ;;
-    odd-timing)   scenario_odd_timing  ;;
-    large-usd)    scenario_large_usd   ;;
-    pep-pen)      scenario_pep_pen     ;;
-    below-cop)    scenario_below_cop   ;;
-    corp-med)     scenario_corp_med    ;;
-    mule)         scenario_mule        ;;
-    tiny-cop)     scenario_tiny_cop    ;;
-    income-gap)   scenario_income_gap  ;;
-    all)
-        scenario_low_risk
-        scenario_high_risk
-        scenario_pep_small
-        scenario_pep_large
-        scenario_mid_risk
-        scenario_multi_ccy
-        scenario_corp
-        scenario_safe
-        scenario_struct
-        scenario_new_acct
-        scenario_micro
-        scenario_pep_corp
-        scenario_high_pen
-        scenario_safe_pen
-        scenario_under_thresh
-        scenario_intl_wire
-        scenario_sme_low
-        scenario_id_change
-        scenario_large_mxn
-        scenario_remittance
-        scenario_odd_timing
-        scenario_large_usd
-        scenario_pep_pen
-        scenario_below_cop
-        scenario_corp_med
-        scenario_mule
-        scenario_tiny_cop
-        scenario_income_gap
-        ;;
-    *)
-        fail "Unknown scenario: ${SCENARIO}"
-        echo "  Valid scenarios: low-risk | high-risk | pep-small | pep-large | mid-risk | multi-ccy | corp | safe"
-        echo "                   struct | new-acct | micro | pep-corp | high-pen | safe-pen | under-thresh | intl-wire"
-        echo "                   sme-low | id-change | large-mxn | remittance | odd-timing | large-usd | pep-pen"
-        echo "                   below-cop | corp-med | mule | tiny-cop | income-gap | all"
+if [[ -n "$SCENARIO_NUM" ]]; then
+    # -s NUM: run exactly one scenario by number
+    if ! [[ "$SCENARIO_NUM" =~ ^[0-9]+$ ]] || (( SCENARIO_NUM < 1 || SCENARIO_NUM > TOTAL_SCENARIOS )); then
+        fail "Invalid scenario number: ${SCENARIO_NUM} (valid: 1-${TOTAL_SCENARIOS})"
         exit 1
-        ;;
-esac
+    fi
+    run_scenario_by_num "$SCENARIO_NUM"
+elif [[ -n "$LIMIT" ]]; then
+    # -l NUM: run first N scenarios
+    if ! [[ "$LIMIT" =~ ^[0-9]+$ ]] || (( LIMIT < 1 || LIMIT > TOTAL_SCENARIOS )); then
+        fail "Invalid limit: ${LIMIT} (valid: 1-${TOTAL_SCENARIOS})"
+        exit 1
+    fi
+    for i in $(seq 1 "$LIMIT"); do
+        run_scenario_by_num "$i"
+    done
+else
+    # Named scenario or "all"
+    case "$SCENARIO" in
+        all)
+            for i in $(seq 1 $TOTAL_SCENARIOS); do
+                run_scenario_by_num "$i"
+            done
+            ;;
+        *)
+            num=$(name_to_num "$SCENARIO")
+            if [[ -z "$num" ]]; then
+                fail "Unknown scenario: ${SCENARIO}"
+                echo "  Valid names: ${SCENARIO_NAMES[*]:1}"
+                echo "  Or use: -s NUM (1-${TOTAL_SCENARIOS}) | -l NUM"
+                exit 1
+            fi
+            run_scenario_by_num "$num"
+            ;;
+    esac
+fi
 
 # ── Summary ────────────────────────────────────────────────────────────────────
 echo ""

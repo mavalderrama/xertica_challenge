@@ -648,4 +648,64 @@ class Command(BaseCommand):
                     "notes": "Single deposit of COP 21.5M. Customer's declared annual income is COP 48M (~COP 4M/month). This single deposit represents 5 months of declared income. Income verification documents requested but not yet received.",
                 },
             },
+            # ── Scenario 29 (Edge Case) ────────────────────────────────────
+            # Expected: ESCALATE — xgboost is near-maximum (0.97, CRITICAL band)
+            # but amount is trivially small ($75 USD, far below any threshold).
+            # This tests whether the system correctly prioritizes the ML model's
+            # anomaly signal over amount-based heuristics. A naive system would
+            # DISMISS because $75 is nothing; a robust system recognizes that
+            # 0.97 xgboost is a screaming red flag — it may indicate a probe
+            # transaction (criminals test with tiny amounts before large ones)
+            # or synthetic identity fraud where the amount is irrelevant.
+            {
+                "external_alert_id": "LIVE-GHOST-PROBE-029",
+                "customer_id": "CUST-PROBE-029",
+                "is_pep": False,
+                "amount": "75.00",          # USD $75 — far below any threshold
+                "currency": "USD",
+                "transaction_date": now - timedelta(hours=1),
+                "status": Alert.Status.PENDING,
+                "xgboost_score": 0.97,
+                "raw_payload": {
+                    "source": "xgboost_v3",
+                    "alert_type": "ANOMALY_SCORE_CRITICAL",
+                    "segment": "retail_individual",
+                    "notes": "ML model flagged at 0.97 confidence despite trivial $75 USD amount. "
+                             "Account was dormant for 11 months, then received 14 micro-transfers from "
+                             "8 distinct originators in 48 hours — none individually suspicious, but the "
+                             "burst pattern matches known synthetic-identity activation sequences. "
+                             "Destination account was opened with minimal KYC (student visa holder, no "
+                             "income documentation). No single transfer exceeds $100.",
+                },
+            },
+            # ── Scenario 30 (Edge Case) ────────────────────────────────────
+            # Expected: ESCALATE — PEP hard-rule must fire even when EVERY other
+            # signal says DISMISS: near-zero amount (EUR 0.01), near-zero xgboost
+            # (0.02), unsupported currency (EUR — no LATAM regulatory threshold),
+            # verified KYC, zero prior alerts. This is the ultimate PEP invariant
+            # test: the system must escalate purely because of the PEP flag,
+            # regardless of how innocuous the transaction appears. If any code
+            # path bypasses the PEP check (e.g., a "skip trivial" optimization),
+            # this scenario catches it.
+            {
+                "external_alert_id": "LIVE-PEP-PHANTOM-030",
+                "customer_id": "CUST-PEP-030",
+                "is_pep": True,
+                "amount": "0.01",           # EUR 0.01 — near-zero, unsupported currency
+                "currency": "EUR",
+                "transaction_date": now - timedelta(hours=2),
+                "status": Alert.Status.PENDING,
+                "xgboost_score": 0.02,
+                "raw_payload": {
+                    "source": "xgboost_v3",
+                    "alert_type": "ROUTINE_CHECK",
+                    "segment": "high_value_individual",
+                    "notes": "EUR 0.01 cent transfer from a PEP-designated diplomat. Currency is EUR "
+                             "(not in any LATAM regulatory threshold table). XGBoost score is 0.02 — "
+                             "the model considers this transaction harmless. KYC is fully verified, "
+                             "zero prior alerts. Every signal says DISMISS except the PEP flag. "
+                             "Regulation mandates 100% human escalation for PEPs regardless of amount, "
+                             "currency, or risk score.",
+                },
+            },
         ]

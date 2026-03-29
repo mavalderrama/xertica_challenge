@@ -166,8 +166,8 @@ class DecisionAgent(BaseAgent):
             for c in regulation_chunks
         )
 
-        chain = DECISION_PROMPT | self.llm | JsonOutputParser()
-        result = await chain.ainvoke(
+        chain = DECISION_PROMPT | self.llm
+        message = await chain.ainvoke(
             {
                 "risk_score": risk_data["risk_score"],
                 "justification": risk_data["justification"],
@@ -180,11 +180,11 @@ class DecisionAgent(BaseAgent):
                 "regulations": regulations_text or "No specific regulations retrieved.",
             }
         )
+        result = JsonOutputParser().parse(message.content)
 
-        usage_metadata = getattr(self.llm, "last_token_usage", {})
-        token_count = usage_metadata.get("total_tokens", 0) if usage_metadata else 0
-        input_tokens = token_count // 2
-        output_tokens = token_count - input_tokens
+        usage = getattr(message, "usage_metadata", None) or {}
+        input_tokens = usage.get("input_tokens", 0)
+        output_tokens = usage.get("output_tokens", 0)
         cost_usd = estimate_cost(input_tokens, output_tokens)
 
         decision = Decision(

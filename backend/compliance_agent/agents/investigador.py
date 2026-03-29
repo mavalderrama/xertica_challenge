@@ -57,6 +57,8 @@ class InvestigadorAgent(BaseAgent):
         currencies = list({t.get("currency") for t in tx_history})
         countries = list({t.get("country_code") for t in tx_history})
 
+        customer_profile = self._extract_customer_profile(documents_analyzed)
+
         structured_context = {
             "customer_id": customer_id,
             "transaction_count_90d": len(tx_history),
@@ -67,6 +69,7 @@ class InvestigadorAgent(BaseAgent):
             "current_alert_amount": float(alert_data.get("amount", 0)),
             "current_alert_currency": alert_data.get("currency", "USD"),
             "documents_count": len(documents_analyzed),
+            "customer_profile": customer_profile,
         }
 
         duration = time.monotonic() - start
@@ -94,3 +97,47 @@ class InvestigadorAgent(BaseAgent):
         )
 
         return {**state, "investigation": {"id": str(investigation.id), **structured_context}}
+
+    @staticmethod
+    def _extract_customer_profile(documents_analyzed: list[dict]) -> dict:
+        """
+        Parse KYC profile fields from document text.
+
+        Looks for lines of the form "- Key: Value" in the first document that
+        contains a KYC profile section. Returns a dict of extracted fields.
+        """
+        import re
+
+        _FIELD_RE = re.compile(r"^-\s+([^:]+):\s+(.+)$")
+        _FIELD_MAP = {
+            "account opened": "account_opened",
+            "kyc status": "kyc_status",
+            "last kyc update": "last_kyc_update",
+            "risk category": "risk_category",
+            "segment": "segment",
+            "declared profession": "declared_profession",
+            "annual declared income": "annual_declared_income",
+            "country of residence": "country",
+            "previous alerts": "previous_alerts",
+            "escalated alerts": "escalated_alerts",
+            "notes": "compliance_notes",
+        }
+
+        for doc in documents_analyzed:
+            text = doc.get("text", "")
+            if "KYC Profile" not in text and "Customer Profile" not in text:
+                continue
+            profile: dict = {}
+            for line in text.splitlines():
+                m = _FIELD_RE.match(line.strip())
+                if not m:
+                    continue
+                key_raw = m.group(1).strip().lower()
+                value = m.group(2).strip()
+                mapped = _FIELD_MAP.get(key_raw)
+                if mapped:
+                    profile[mapped] = value
+            if profile:
+                return profile
+
+        return {}

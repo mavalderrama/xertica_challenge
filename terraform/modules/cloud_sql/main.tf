@@ -12,6 +12,8 @@ resource "google_sql_database_instance" "main" {
   settings {
     tier = var.db_tier
 
+    # Enable pgvector extension — required for dense embedding storage and
+    # cosine similarity search (used by VectorStoreRetriever).
     database_flags {
       name  = "cloudsql.enable_pgvector"
       value = "on"
@@ -23,6 +25,7 @@ resource "google_sql_database_instance" "main" {
     }
 
     ip_configuration {
+      # No public IP — Cloud Run connects via the Cloud SQL Auth Proxy Unix socket.
       ipv4_enabled    = false
       private_network = "projects/${var.project_id}/global/networks/default"
     }
@@ -35,6 +38,21 @@ resource "google_sql_database" "compliance" {
   name     = "compliance_db"
   instance = google_sql_database_instance.main.name
   project  = var.project_id
+}
+
+# Database user — password is pulled from Secret Manager so it is never
+# stored in Terraform state in plaintext.
+resource "google_sql_user" "compliance" {
+  name     = "compliance"
+  instance = google_sql_database_instance.main.name
+  project  = var.project_id
+  password = data.google_secret_manager_secret_version.db_password.secret_data
+}
+
+data "google_secret_manager_secret_version" "db_password" {
+  secret  = "compliance-db-password"
+  version = "latest"
+  project = var.project_id
 }
 
 output "connection_name" {

@@ -51,12 +51,12 @@ index-regulations:
 	cd $(BACKEND) && uv run python manage.py index_regulations --settings=config.settings.local
 
 live-test:
-	bash scripts/live_test.sh $(SCENARIO)
+	bash scripts/live_test.sh $(if $(S),-s $(S)) $(if $(L),-l $(L)) $(SCENARIO)
 
 live-test-judge:
 	bash scripts/live_test.sh all http://localhost:8000 --judge
 
-populate: migrate seed index-regulations live-test-judge
+populate: migrate seed index-regulations
 
 clean:
 	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null; \
