@@ -37,3 +37,5 @@ terraform/.terraform.lock.hcl
 # Project-specific
 CHALLENGE.md
 .claude
+
+*/.ipynb_checkpoints/

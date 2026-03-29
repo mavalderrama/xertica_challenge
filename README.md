@@ -917,6 +917,24 @@ await indexer.link_related_articles()  # builds the graph layer
 
 ## 8. Data Model
 
+The system creates **7 database tables** (6 Django models + 1 auto-generated M2M join table). Each table maps directly to one stage of the agent pipeline.
+
+### 8.1 Table Summary
+
+| DB Table | Django Model | What It Does | Populated By |
+|---|---|---|---|
+| `compliance_agent_alert` | `Alert` | One row per fraud alert ingested from the XGBoost scoring system. Holds the original payload, PEP flag, amount/currency, ML score, and current pipeline status. The root entity — all other tables hang off this one. | `seed_data` management command (dev) / alert ingestion API (prod) |
+| `compliance_agent_investigation` | `Investigation` | Output of **Agent 1 (Investigador)**. Stores the aggregated investigation context: transaction history pulled from BigQuery, customer documents fetched from GCS, and a structured JSON summary passed to the next agents. 1:1 with Alert. | `InvestigadorAgent` |
+| `compliance_agent_riskanalysis` | `RiskAnalysis` | Output of **Agent 2 (Risk Analyzer)**. LLM-generated risk score (1–10) with justification, a list of detected anomalous patterns, and a human-readable summary. Feeds directly into the decision step. 1:1 with Investigation. | `RiskAnalyzerAgent` |
+| `compliance_agent_decision` | `Decision` | Output of **Agent 3 (Decision Agent)**. Final verdict: `ESCALATE`, `DISMISS`, or `REQUEST_INFO`. Includes confidence score, cited regulation articles with exact text, full step-by-step reasoning, and `is_pep_override_applied` flag for PEP hard-rule cases. 1:1 with RiskAnalysis. | `DecisionAgent` (LLM + RAG path, or PEP hard-rule shortcut) |
+| `compliance_agent_auditlog` | `AuditLog` | Regulatory audit trail required by UIAF/CNBV/SBS. One entry per agent step (`INVESTIGATION`, `RISK_ANALYSIS`, `DECISION`). Records duration, LLM token cost (USD), input/output snapshots, and Langfuse trace ID. N:1 with Alert. | `AuditService` (called automatically by each agent) |
+| `compliance_agent_regulationdocument` | `RegulationDocument` | RAG knowledge base. Chunked texts from 5 regulatory documents (UIAF/CNBV/SBS) stored with: (1) dense 384-dim embedding via pgvector for cosine similarity search, (2) PostgreSQL `tsvector` field for BM25 sparse keyword search, (3) self-referential M2M graph for 1-hop related-article expansion. Used exclusively by the Decision Agent. | `index_regulations` management command |
+| `compliance_agent_regulationdocument_related_articles` | *(auto M2M join)* | Django-generated join table for the self-referential many-to-many on `RegulationDocument`. Stores `(from_id, to_id)` pairs that the graph retriever uses for 1-hop related-article expansion during RAG retrieval. | Django ORM (auto-managed) |
+
+### 8.2 Entity Diagram
+
+The 1:1 chain mirrors the agent pipeline exactly — each stage reads from the previous table and writes its own:
+
 ```
 Alert
 ├── id (UUID, PK)
@@ -951,7 +969,7 @@ RiskAnalysis ──1:1──► Decision
                        └── is_pep_override_applied (bool)
 
 Alert ──1:N──► AuditLog
-               ├── event_type
+               ├── event_type (INVESTIGATION | RISK_ANALYSIS | DECISION)
                ├── agent_name
                ├── input_snapshot (JSON)
                ├── output_snapshot (JSON)
@@ -964,13 +982,15 @@ RegulationDocument ──M:M──► RegulationDocument (related_articles, asym
 ├── document_ref
 ├── article_number
 ├── content (text)
-├── embedding (vector, 384-dim)       ← dense
-├── sparse_embedding (sparsevec, 30k) ← sparse
+├── embedding (vector, 384-dim)   ← dense (pgvector cosine, HNSW index)
+├── search_vector (tsvector)      ← sparse (BM25 via ts_rank, GIN index)
 ├── chunk_index (int)
 └── gcs_uri
 ```
 
-**Status state machine:**
+**Cascade rule:** Deleting an `Alert` cascades to `Investigation` → `RiskAnalysis` → `Decision` and to all `AuditLog` entries. `RegulationDocument` is independent (shared knowledge base, never deleted per-alert).
+
+### 8.3 Status State Machine
 
 ```
 PENDING ──► INVESTIGATING ──► ESCALATED
